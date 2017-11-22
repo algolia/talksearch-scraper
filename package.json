@@ -1,0 +1,27 @@
+{
+  "name": "talksearch-scraper",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/algolia/talksearch-scraper.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/algolia/talksearch-scraper/issues"
+  },
+  "homepage": "https://github.com/algolia/talksearch-scraper#readme",
+  "dependencies": {
+    "algoliasearch": "^3.24.6",
+    "axios": "^0.17.1",
+    "body-parser": "^1.18.2",
+    "express": "^4.16.2",
+    "youtube-captions-scraper": "^1.0.0"
+  }
+}
