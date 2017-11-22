@@ -8,6 +8,7 @@ import {
 import indexToAlgolia from './algolia';
 
 export async function indexChannel(req, res) {
+  console.log('hitting the channel route', req.params.channelName);
   const { params: { channelName } } = req;
   const channelId = await getChannelID(channelName);
   const playlistId = await getPlaylistID(channelId);
