@@ -11,7 +11,7 @@ app.get('/index-channel/:channelName', indexChannel);
 app.get('/index-playlist/:playlistId', indexPlaylist);
 app.get('/index-video/:videoId', indexVideo);
 app.get('/*', (req, res) => {
-  res.send({ test: 'true' });
+  res.send({ ping: 'pong' });
 });
 
 app.listen(port, () => console.log(`Running on localhost:${port}`));
