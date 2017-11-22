@@ -1,7 +1,7 @@
 import { get } from 'lodash/fp';
 import axios from 'axios';
 
-const API_KEY = 'AIzaSyBiVMv9qAK8taTcfjYkzv2DVMNF424hHOw'; // process.env.YOUTUBE_API_KEY
+const API_KEY = process.env.YOUTUBE_API_KEY;
 const BASE_URL = 'https://www.googleapis.com/youtube/v3/';
 
 function ytAPIReq(endpoint, options) {
@@ -13,6 +13,16 @@ function ytAPIReq(endpoint, options) {
       key: API_KEY,
     },
   });
+}
+
+function getVideoData(video, id) {
+  return {
+    id,
+    title: video.snippet.title,
+    description: video.snippet.description,
+    thumbnails: video.snippet.thumbnails.medium,
+    channel: video.snippet.channelTitle,
+  };
 }
 
 export function getChannelID(channelName) {
@@ -27,11 +37,21 @@ export function getPlaylistID(channelId) {
   }).then(get('data.items[0].contentDetails.relatedPlaylists.uploads'));
 }
 
+export async function getVideo(videoId) {
+  const { data: { items } } = await ytAPIReq('videos', {
+    params: {
+      id: videoId,
+      part: 'snippet',
+    },
+  });
+  return getVideoData(items[0], items[0].id);
+}
+
 export async function recursiveGetVideosList(
   channelId,
   playlistId,
   pageToken,
-  videos
+  videos = []
 ) {
   const { data: { nextPageToken1, items } } = await ytAPIReq('playlistItems', {
     params: {
@@ -40,17 +60,13 @@ export async function recursiveGetVideosList(
       pageToken,
       order: 'date',
       part: 'snippet',
-      maxResults: 10,
+      maxResults: 20,
     },
   });
 
-  const computedVideos = items.map(video => ({
-    id: video.snippet.resourceId.videoId,
-    title: video.snippet.title,
-    description: video.snippet.description,
-    thumbnails: video.snippet.thumbnails.medium,
-    channel: video.snippet.channelTitle,
-  }));
+  const computedVideos = items.map(video =>
+    getVideoData(video, video.snippet.resourceId.videoId)
+  );
 
   return nextPageToken1
     ? recursiveGetVideosList(
