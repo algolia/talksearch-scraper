@@ -5,10 +5,10 @@ This scraper is an API that index captions of YouTube videos. It works either wi
 The Algolia indices are:
 * `ALL_VIDEOS`: all indexed videos
 * `<channelName>`: one indexed channel 
-* `<channelName>-playlist-<playlistId`: one indexed playlist
+* `<channelName>-playlist-<playlistId>`: one indexed playlist
 * `<channelName>-video-<videoId>`: one indexed video
 
-Every routes return the same JSON format. For example if we target `/index-channel/GConfs`, it will return:
+Every routes return the same JSON format. For example if we target `/index-channel/GConfs` (`GConfs` being a YouTube channel of EPITA talks), it will return:
 
 ```
 {
