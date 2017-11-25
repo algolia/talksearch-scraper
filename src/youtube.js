@@ -74,7 +74,7 @@ export async function recursiveGetVideosList(
   const computedVideos = [];
   for (const playlistItem of items) {
     // We need to call /videos for each videos
-    // because we can't get statistics directly on /playlisItems
+    // because we can't get statistics directly on /playlistItems
     computedVideos.push(
       await getVideo(playlistItem.snippet.resourceId.videoId)
     );
