@@ -22,6 +22,6 @@ GET `/index-channel/:channelName`
 
 ## Env variables
 
-* `ALGOLIA_APP_ID`
-* `ALGOLIA_API_KEY`
+* `APP_ID`
+* `API_KEY`
 * `YOUTUBE_API_KEY`

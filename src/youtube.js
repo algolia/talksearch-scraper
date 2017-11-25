@@ -16,12 +16,19 @@ function ytAPIReq(endpoint, options) {
 }
 
 function getVideoData(video, id) {
+  let ranking = 0;
+  for (const stat in video.statistics) {
+    if (video.statistics.hasOwnProperty(stat)) {
+      ranking += parseInt(video.statistics[stat], 10);
+    }
+  }
   return {
     id,
     title: video.snippet.title,
     description: video.snippet.description,
     thumbnails: video.snippet.thumbnails.medium,
     channel: video.snippet.channelTitle,
+    ranking,
   };
 }
 
@@ -41,7 +48,7 @@ export async function getVideo(videoId) {
   const { data: { items } } = await ytAPIReq('videos', {
     params: {
       id: videoId,
-      part: 'snippet',
+      part: 'snippet,statistics',
     },
   });
   return getVideoData(items[0], items[0].id);
@@ -64,9 +71,14 @@ export async function recursiveGetVideosList(
     },
   });
 
-  const computedVideos = items.map(video =>
-    getVideoData(video, video.snippet.resourceId.videoId)
-  );
+  const computedVideos = [];
+  for (const playlistItem of items) {
+    // We need to call /videos for each videos
+    // because we can't get statistics directly on /playlisItems
+    computedVideos.push(
+      await getVideo(playlistItem.snippet.resourceId.videoId)
+    );
+  }
 
   return nextPageToken1
     ? recursiveGetVideosList(
