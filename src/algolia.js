@@ -88,7 +88,9 @@ export default async function indexToAlgolia(videos, indexName) {
     }
 
     report.indexedVideos = report.totalVideos - report.failures.length;
-    reportIndex.addObject(report);
+    if (report.indexedVideos > 0) {
+      reportIndex.addObject(report);
+    }
     return report;
   }
 }
