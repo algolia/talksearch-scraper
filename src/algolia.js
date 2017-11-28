@@ -36,9 +36,11 @@ function index(indexName, video, captions) {
       (content.hits[0].title !== video.title &&
         content.hits[0].channel !== video.channel)
     ) {
+      const transcript = captions.map(caption => caption.text).join(' ');
       globalIndex.addObject({
         ...video,
         indexName,
+        transcript,
       });
     }
   });
@@ -68,6 +70,7 @@ export default async function indexToAlgolia(videos, indexName) {
       }
     });
     delete existingReport._highlightResult;
+    delete existingReport.objectID;
     return existingReport;
   } else {
     const report = {
