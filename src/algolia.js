@@ -11,6 +11,7 @@ function index(indexName, video, captions) {
   const algoliaIndex = client.initIndex(indexName);
   const captionsWithObjectID = captions.map(caption => ({
     ...caption,
+    start: parseFloat(caption.start),
     videoId: video.id,
     videoTitle: video.title,
     videoDescription: video.description,
@@ -21,8 +22,9 @@ function index(indexName, video, captions) {
   }));
 
   algoliaIndex.setSettings({
-    searchableAttributes: ['text'],
+    searchableAttributes: ['videoTitle', 'videoDescription', 'text'],
     attributesForFaceting: ['videoId'],
+    customRanking: ['asc(start)'],
   });
   algoliaIndex.addObjects(captionsWithObjectID);
 
@@ -71,6 +73,7 @@ export default async function indexToAlgolia(videos, indexName) {
     });
     delete existingReport._highlightResult;
     delete existingReport.objectID;
+    existingReport.indexName = finalIndexName;
     return existingReport;
   } else {
     const report = {

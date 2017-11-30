@@ -60,14 +60,14 @@ export async function recursiveGetVideosList(
   pageToken,
   videos = []
 ) {
-  const { data: { nextPageToken1, items } } = await ytAPIReq('playlistItems', {
+  const { data: { nextPageToken, items } } = await ytAPIReq('playlistItems', {
     params: {
       channelId,
       playlistId,
       pageToken,
       order: 'date',
       part: 'snippet',
-      maxResults: 20,
+      maxResults: 50,
     },
   });
 
@@ -80,11 +80,11 @@ export async function recursiveGetVideosList(
     );
   }
 
-  return nextPageToken1
+  return nextPageToken
     ? recursiveGetVideosList(
         channelId,
         playlistId,
-        nextPageToken1,
+        nextPageToken,
         videos.concat(computedVideos)
       )
     : videos.concat(computedVideos);

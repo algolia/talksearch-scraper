@@ -2613,6 +2613,10 @@ strip-json-comments@~2.0.1:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/strip-json-comments/-/strip-json-comments-2.0.1.tgz#3c531942e908c2697c0ec344858c286c7ca0a60a"
 
+striptags@^3.1.0:
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/striptags/-/striptags-3.1.0.tgz#763e534338d9cf542f004a4b1eb099e32d295e44"
+
 supports-color@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/supports-color/-/supports-color-2.0.0.tgz#535d045ce6b6363fa40117084629995e9df324c7"
@@ -2797,10 +2801,11 @@ yallist@^2.1.2:
   version "2.1.2"
   resolved "https://registry.yarnpkg.com/yallist/-/yallist-2.1.2.tgz#1c11f9218f076089a47dd512f93c6699a6a81d52"
 
-youtube-captions-scraper@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/youtube-captions-scraper/-/youtube-captions-scraper-1.0.0.tgz#fa1483fed7993c363ad2adbd9eb6d58e25ef088e"
+youtube-captions-scraper@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/youtube-captions-scraper/-/youtube-captions-scraper-1.0.1.tgz#ac96049708ec8fd2a7dd813d42d3a1ed44225391"
   dependencies:
     axios "^0.17.1"
     he "^1.1.1"
     lodash "^4.17.4"
+    striptags "^3.1.0"
