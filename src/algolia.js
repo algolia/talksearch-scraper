@@ -24,6 +24,7 @@ function index(indexName, video, captions) {
   algoliaIndex.setSettings({
     searchableAttributes: ['videoTitle', 'videoDescription', 'text'],
     attributesForFaceting: ['videoId'],
+    attributeForDistinct: 'videoId',
     customRanking: ['asc(start)'],
   });
   algoliaIndex.addObjects(captionsWithObjectID);
