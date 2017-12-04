@@ -2801,9 +2801,9 @@ yallist@^2.1.2:
   version "2.1.2"
   resolved "https://registry.yarnpkg.com/yallist/-/yallist-2.1.2.tgz#1c11f9218f076089a47dd512f93c6699a6a81d52"
 
-youtube-captions-scraper@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/youtube-captions-scraper/-/youtube-captions-scraper-1.0.1.tgz#ac96049708ec8fd2a7dd813d42d3a1ed44225391"
+youtube-captions-scraper@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/youtube-captions-scraper/-/youtube-captions-scraper-1.0.2.tgz#f0492198cb0121214d5eb3f5b0dc1c399c27b968"
   dependencies:
     axios "^0.17.1"
     he "^1.1.1"
