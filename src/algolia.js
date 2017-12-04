@@ -22,10 +22,14 @@ function index(indexName, video, captions) {
   }));
 
   algoliaIndex.setSettings({
-    searchableAttributes: ['videoTitle', 'videoDescription', 'text'],
+    searchableAttributes: [
+      'unordered(videoTitle)',
+      'unordered(videoDescription)',
+      'unordered(text)',
+    ],
     attributesForFaceting: ['videoId'],
     attributeForDistinct: 'videoId',
-    customRanking: ['asc(start)'],
+    customRanking: ['asc(start)', 'desc(videoRanking)'],
   });
   algoliaIndex.addObjects(captionsWithObjectID);
 
@@ -39,11 +43,9 @@ function index(indexName, video, captions) {
       (content.hits[0].title !== video.title &&
         content.hits[0].channel !== video.channel)
     ) {
-      const transcript = captions.map(caption => caption.text).join(' ');
       globalIndex.addObject({
         ...video,
         indexName,
-        transcript,
       });
     }
   });
