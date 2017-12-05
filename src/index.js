@@ -1,15 +1,13 @@
 import express from 'express';
 import bodyParser from 'body-parser';
-import { indexChannel, indexPlaylist, indexVideo } from './routes';
+import { index } from './routes';
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 
-app.get('/index-channel/:channelName', indexChannel);
-app.get('/index-playlist/:playlistId', indexPlaylist);
-app.get('/index-video/:videoId', indexVideo);
+app.post('/index', index);
 app.get('/*', (req, res) => {
   res.send({ ping: 'pong' });
 });

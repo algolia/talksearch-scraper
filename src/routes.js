@@ -7,34 +7,99 @@ import {
 
 import indexToAlgolia from './algolia';
 
-export async function indexChannel(req, res) {
-  console.log('hitting the channel route', req.params.channelName);
-  const { params: { channelName } } = req;
-  const channelId = await getChannelID(channelName);
+async function getYoutubeChannel(channelId) {
   const playlistId = await getPlaylistID(channelId);
   const videos = await recursiveGetVideosList(channelId, playlistId);
-  const report = await indexToAlgolia(videos, channelName);
-  res.send(report);
+  return { videos, indexName: videos[0].channel };
 }
 
-export async function indexVideo(req, res) {
-  console.log('hitting the video route', req.params.videoId);
-  const { params: { videoId } } = req;
+async function getYoutubeVideo(videoId) {
   const video = await getVideo(videoId);
-  const report = await indexToAlgolia(
-    [video],
-    `${video.channel}-video-${video.id}`
-  );
-  res.send(report);
+  return {
+    videos: [video],
+    indexName: `${video.channel}-video-${video.id}`,
+  };
 }
 
-export async function indexPlaylist(req, res) {
-  console.log('hitting the playlist route', req.params.playlistId);
-  const { params: { playlistId } } = req;
+async function getYoutubePlaylist(playlistId) {
   const videos = await recursiveGetVideosList(null, playlistId);
-  const report = await indexToAlgolia(
+  return {
     videos,
-    `${videos[0].channel}-playlist-${playlistId}`
+    indexName: `${videos[0].channel}-playlist-${playlistId}`,
+  };
+}
+
+function validURL(url) {
+  return url.match(/youtube\.com/) !== null;
+}
+
+async function recognizeURL(url) {
+  let func;
+  let id;
+  if (url.match(/\?v=/)) {
+    func = 'Video';
+    id = url.replace(/.*v=([^&]+).*/, '$1');
+  } else if (url.match(/\?list=/)) {
+    func = 'Playlist';
+    id = url.replace(/.*list=([^&]+).*/, '$1');
+  } else if (url.match(/channel/)) {
+    func = 'Channel';
+    id = url.replace(/.*channel\/([^/]+).*/, '$1');
+  } else if (url.match(/user/)) {
+    func = 'Channel';
+    const channelName = url.replace(/.*user\/([^/]+).*/, '$1');
+    id = await getChannelID(channelName);
+  }
+
+  if (!id) {
+    return { func: 'None' };
+  }
+
+  return { func, id };
+}
+
+function addSpeaker(videos, speaker) {
+  for (const video of videos) {
+    if (speaker.regex) {
+      video.speaker = video.title.replace(
+        new RegExp(speaker.regex),
+        `$${speaker.nbSubStr}`
+      );
+    } else {
+      video.speaker = video.title.split(' - ')[1];
+    }
+  }
+}
+
+export async function index(req, res) {
+  const { body: { youtubeURL, speaker } } = req;
+
+  if (!validURL(youtubeURL)) {
+    return res.send({
+      success: false,
+      message: 'The URL is not a valid YouTube URL.',
+    });
+  }
+
+  const data = await recognizeURL(youtubeURL);
+  if (data.func === 'None') {
+    return res.send({
+      success: false,
+      message: 'The URL does not match a YouTube channel, playlist nor video.',
+    });
+  }
+
+  // Call getYoutube<Channel|Playlist|Video>
+  const { videos, indexName } = await eval(
+    `getYoutube${data.func}('${data.id}')`
   );
-  res.send(report);
+  if (speaker.extract) {
+    addSpeaker(videos, speaker);
+  }
+
+  const report = await indexToAlgolia(videos, indexName);
+  return res.send({
+    success: true,
+    ...report,
+  });
 }
