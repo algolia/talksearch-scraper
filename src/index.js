@@ -12,4 +12,5 @@ app.get('/*', (req, res) => {
   res.send({ ping: 'pong' });
 });
 
-app.listen(port, () => console.log(`Running on localhost:${port}`));
+const server = app.listen(port, () => console.log(`Running on localhost:${port}`));
+server.setTimeout(500000);
