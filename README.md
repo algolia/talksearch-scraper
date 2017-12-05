@@ -1,27 +1,23 @@
 # talksearch-scraper
 
-This scraper is an API that index captions of YouTube videos. It works either with a channel name, a playlist id or a video id.
+This scraper is an API that index captions of YouTube videos. It works either with a channel, a playlist or a video URL.
 
-The Algolia indices are:
-* `ALL_VIDEOS`: all indexed videos
+The index that list all indexed video is `ALL_VIDEOS`.
+
+The generated indices are:
 * `<channelName>`: one indexed channel 
 * `<channelName>-playlist-<playlistId>`: one indexed playlist
 * `<channelName>-video-<videoId>`: one indexed video
 
-Every routes return the same JSON format. For example if we target `/index-channel/GConfs` (`GConfs` being a YouTube channel of EPITA talks), it will return:
-
+The `/index` route returns the following JSON:
 ```
 {
-  indexName: "GConfs",
-  totalVideos: 20,
-  failures: [
-    "WQuqm71J-fo",
-    "3QKNIOxBrpQ",
-    "Q80zPtWhDLs",
-    "c4kBo6DAg3M",
-    "jNuJXjD9veQ"
-  ],
-  indexedVideos: 15
+  success: Boolean,
+  message: String,      // Message in case of error
+  indexName: String,
+  totalVideos: Number,
+  failures: Array,      // Array of videos' IDs that failed (no english subtitles)
+  indexedVideos: Number
 }
 ```
 
@@ -35,11 +31,17 @@ Make sure to set the env variables before running the app.
 
 ## Routes
 
-GET `/index-video/:videoId`
-
-GET `/index-playlist/:playlistId`
-
-GET `/index-channel/:channelName`
+POST `/index`
+```
+{
+  youtubeURL: String,  // the YouTube URL of the channel/playlist/video
+  speaker: {
+    extract: Boolean,
+    regex: String,     // Optional
+    nbSubStr: Number   // Optional 
+  }
+}
+```
 
 ## Env variables
 
