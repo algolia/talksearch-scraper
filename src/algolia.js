@@ -18,6 +18,7 @@ function index(indexName, video, captions) {
     videoThumbnails: video.thumbnails,
     videoRanking: video.ranking,
     channel: video.channel,
+    speaker: video.speaker,
     objectID: `${video.id}-${caption.start}`,
   }));
 
@@ -27,7 +28,7 @@ function index(indexName, video, captions) {
       'unordered(videoDescription)',
       'unordered(text)',
     ],
-    attributesForFaceting: ['videoId'],
+    attributesForFaceting: ['videoId', 'speaker'],
     attributeForDistinct: 'videoId',
     customRanking: ['asc(start)', 'desc(videoRanking)'],
   });
