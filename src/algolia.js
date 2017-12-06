@@ -7,14 +7,60 @@ const client = algoliasearch(APP_ID, API_KEY);
 const globalIndex = client.initIndex('ALL_VIDEOS');
 const reportIndex = client.initIndex('REPORTS');
 
+function setSettings(newIndex) {
+  const replicaIndexName = `${newIndex.indexName}-detail`;
+  newIndex.setSettings(
+    {
+      searchableAttributes: [
+        'unordered(title)',
+        'unordered(description)',
+        'unordered(speaker)',
+        'unordered(text)',
+      ],
+      attributesForFaceting: ['videoId', 'speaker'],
+      attributeForDistinct: 'videoId',
+      customRanking: ['asc(start)', 'desc(videoRanking)'],
+      replicas: [replicaIndexName],
+    },
+    err => {
+      if (err) {
+        console.err(err);
+        return;
+      }
+      const replicaIndex = client.initIndex(replicaIndexName);
+      replicaIndex.setSettings({
+        searchableAttributes: ['unordered(text)'],
+        attributesForFaceting: ['videoId'],
+        attributeForDistinct: 'videoId',
+        customRanking: ['asc(start)'],
+      });
+    }
+  );
+}
+
+function addVideoToGlobalIndex(indexName, video) {
+  globalIndex.search({ query: video.title }, (err, content) => {
+    if (err) {
+      console.err(err);
+      return;
+    }
+    if (content.hits.length === 0 || content.hits[0].id !== video.id) {
+      globalIndex.addObject({
+        ...video,
+        indexName,
+      });
+    }
+  });
+}
+
 function index(indexName, video, captions) {
   const algoliaIndex = client.initIndex(indexName);
   const captionsWithObjectID = captions.map(caption => ({
     ...caption,
     start: parseFloat(caption.start),
     videoId: video.id,
-    videoTitle: video.title,
-    videoDescription: video.description,
+    title: video.title,
+    description: video.description,
     videoThumbnails: video.thumbnails,
     videoRanking: video.ranking,
     channel: video.channel,
@@ -22,34 +68,11 @@ function index(indexName, video, captions) {
     objectID: `${video.id}-${caption.start}`,
   }));
 
-  algoliaIndex.setSettings({
-    searchableAttributes: [
-      'unordered(videoTitle)',
-      'unordered(videoDescription)',
-      'unordered(text)',
-    ],
-    attributesForFaceting: ['videoId', 'speaker'],
-    attributeForDistinct: 'videoId',
-    customRanking: ['asc(start)', 'desc(videoRanking)'],
-  });
+  setSettings(algoliaIndex);
+
   algoliaIndex.addObjects(captionsWithObjectID);
 
-  globalIndex.search({ query: video.title }, (err, content) => {
-    if (err) {
-      console.err(err);
-      return;
-    }
-    if (
-      content.hits.length === 0 ||
-      (content.hits[0].title !== video.title &&
-        content.hits[0].channel !== video.channel)
-    ) {
-      globalIndex.addObject({
-        ...video,
-        indexName,
-      });
-    }
-  });
+  addVideoToGlobalIndex(indexName, video);
 }
 
 async function checkDuplicateIndex(indexName) {
