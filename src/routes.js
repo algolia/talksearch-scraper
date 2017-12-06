@@ -5,7 +5,7 @@ import {
   recursiveGetVideosList,
 } from './youtube';
 
-import indexToAlgolia from './algolia';
+import { indexVideos, indexMetadata } from './algolia';
 
 async function getYoutubeChannel(channelId) {
   const playlistId = await getPlaylistID(channelId);
@@ -72,7 +72,7 @@ function addSpeaker(videos, speaker) {
 }
 
 export async function index(req, res) {
-  const { body: { youtubeURL, speaker } } = req;
+  const { body: { youtubeURL, speaker, name, accentColor } } = req;
 
   if (!validURL(youtubeURL)) {
     return res.send({
@@ -97,7 +97,17 @@ export async function index(req, res) {
     addSpeaker(videos, speaker);
   }
 
-  const report = await indexToAlgolia(videos, indexName);
+  const metadata = {
+    objectID: indexName,
+    youtubeURL,
+    name,
+  };
+  if (accentColor) {
+    metadata.accentColor = accentColor;
+  }
+  indexMetadata(metadata);
+
+  const report = await indexVideos(videos, indexName);
   return res.send({
     success: true,
     ...report,

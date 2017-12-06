@@ -6,6 +6,7 @@ const API_KEY = process.env.API_KEY;
 const client = algoliasearch(APP_ID, API_KEY);
 const globalIndex = client.initIndex('ALL_VIDEOS');
 const reportIndex = client.initIndex('REPORTS');
+const metadataIndex = client.initIndex('METADATA');
 
 function setSettings(newIndex) {
   const replicaIndexName = `${newIndex.indexName}-detail`;
@@ -93,7 +94,11 @@ async function checkDuplicateIndex(indexName) {
   return { finalIndexName: indexName, existingReport: null };
 }
 
-export default async function indexToAlgolia(videos, indexName) {
+export function indexMetadata(metadata) {
+  metadataIndex.addObject(metadata);
+}
+
+export async function indexVideos(videos, indexName) {
   const { finalIndexName, existingReport } = await checkDuplicateIndex(
     indexName
   );

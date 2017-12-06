@@ -5,7 +5,7 @@ This scraper is an API that index captions of YouTube videos. It works either wi
 The index that list all indexed video is `ALL_VIDEOS`.
 
 The generated indices are:
-* `<channelName>`: one indexed channel 
+* `<channelName>`: one indexed channel
 * `<channelName>-playlist-<playlistId>`: one indexed playlist
 * `<channelName>-video-<videoId>`: one indexed video
 
@@ -34,12 +34,14 @@ Make sure to set the env variables before running the app.
 POST `/index`
 ```
 {
-  youtubeURL: String,  // the YouTube URL of the channel/playlist/video
+  youtubeURL: String,  // The YouTube URL of the channel/playlist/video
+  name: String,        // Name of the conference
   speaker: {
     extract: Boolean,
     regex: String,     // Optional
-    nbSubStr: Number   // Optional 
-  }
+    nbSubStr: Number   // Optional
+  },
+  accentColor: String  // Optional, css color
 }
 ```
 
