@@ -17,7 +17,7 @@ function setSettings(newIndex) {
         'unordered(speaker)',
         'unordered(text)',
       ],
-      attributesForFaceting: ['videoId', 'speaker'],
+      attributesForFaceting: ['videoId', 'speaker', 'year'],
       attributeForDistinct: 'videoId',
       customRanking: ['asc(start)', 'desc(ranking)'],
       replicas: [replicaIndexName],
@@ -55,18 +55,24 @@ function addVideoToGlobalIndex(indexName, video) {
 
 function index(indexName, video, captions) {
   const algoliaIndex = client.initIndex(indexName);
-  const captionsWithObjectID = captions.map(caption => ({
-    ...caption,
-    start: parseFloat(caption.start),
-    videoId: video.id,
-    title: video.title,
-    description: video.description,
-    thumbnails: video.thumbnails,
-    ranking: video.ranking,
-    channel: video.channel,
-    speaker: video.speaker,
-    objectID: `${video.id}-${caption.start}`,
-  }));
+
+  const captionsWithObjectID = captions.map(caption => {
+    delete caption.dur;
+    return {
+      ...caption,
+      start: parseFloat(caption.start),
+      videoId: video.id,
+      title: video.title,
+      description: video.description,
+      thumbnails: video.thumbnails,
+      ranking: video.ranking,
+      channel: video.channel,
+      speaker: video.speaker,
+      year: video.year,
+      duration: video.duration,
+      objectID: `${video.id}-${caption.start}`,
+    };
+  });
 
   setSettings(algoliaIndex);
 

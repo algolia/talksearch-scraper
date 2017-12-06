@@ -15,20 +15,44 @@ function ytAPIReq(endpoint, options) {
   });
 }
 
-function getVideoData(video, id) {
+function getYear(video) {
+  return new Date(video.snippet.publishedAt).getFullYear();
+}
+
+function getDuration(video) {
+  let duration = 0;
+  const videoDuration = video.contentDetails.duration;
+  const minutes = videoDuration.replace(/PT(.*)M.*/, '$1');
+  if (minutes !== videoDuration) {
+    duration += parseInt(minutes, 10) * 60;
+  }
+  const seconds = videoDuration.replace(/PT(.*M)?(.*)S/, '$2');
+  if (seconds !== videoDuration) {
+    duration += parseInt(seconds, 10);
+  }
+  return duration;
+}
+
+function getRanking(video) {
   let ranking = 0;
   for (const stat in video.statistics) {
     if (video.statistics.hasOwnProperty(stat)) {
       ranking += parseInt(video.statistics[stat], 10);
     }
   }
+  return ranking;
+}
+
+function getVideoData(video, id) {
   return {
     id,
     title: video.snippet.title,
     description: video.snippet.description,
     thumbnails: video.snippet.thumbnails.medium,
     channel: video.snippet.channelTitle,
-    ranking,
+    ranking: getRanking(video),
+    duration: getDuration(video),
+    year: getYear(video),
   };
 }
 
@@ -48,7 +72,7 @@ export async function getVideo(videoId) {
   const { data: { items } } = await ytAPIReq('videos', {
     params: {
       id: videoId,
-      part: 'snippet,statistics',
+      part: 'snippet,contentDetails,statistics',
     },
   });
   return getVideoData(items[0], items[0].id);
