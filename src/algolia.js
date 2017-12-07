@@ -18,8 +18,8 @@ function setSettings(newIndex) {
         'unordered(speaker)',
         'unordered(text)',
       ],
-      attributesForFaceting: ['videoId', 'speaker', 'year', 'searchable(tags)'],
-      attributeForDistinct: 'videoId',
+      attributesForFaceting: ['id', 'speaker', 'year', 'searchable(tags)'],
+      attributeForDistinct: 'id',
       customRanking: ['asc(start)', 'desc(ranking)'],
       replicas: [replicaIndexName],
     },
@@ -31,8 +31,8 @@ function setSettings(newIndex) {
       const replicaIndex = client.initIndex(replicaIndexName);
       replicaIndex.setSettings({
         searchableAttributes: ['unordered(text)'],
-        attributesForFaceting: ['videoId'],
-        attributeForDistinct: 'videoId',
+        attributesForFaceting: ['id'],
+        attributeForDistinct: 'id',
         customRanking: ['asc(start)'],
       });
     }
@@ -62,7 +62,7 @@ function index(indexName, video, captions) {
     return {
       ...caption,
       start: parseFloat(caption.start),
-      videoId: video.id,
+      id: video.id,
       title: video.title,
       description: video.description,
       thumbnails: video.thumbnails,
