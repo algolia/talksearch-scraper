@@ -1,4 +1,4 @@
-![TalkSearch](assets/img/logo-talksearch-line@2x.png)
+![TalkSearch](logo-talksearch-line@2x.png)
 
 This scraper is an API that indexes captions of YouTube videos. It works either with a channel, a playlist or a video URL.
 
