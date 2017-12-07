@@ -18,7 +18,7 @@ function setSettings(newIndex) {
         'unordered(speaker)',
         'unordered(text)',
       ],
-      attributesForFaceting: ['videoId', 'speaker', 'year', 'tags'],
+      attributesForFaceting: ['videoId', 'speaker', 'year', 'searchable(tags)'],
       attributeForDistinct: 'videoId',
       customRanking: ['asc(start)', 'desc(ranking)'],
       replicas: [replicaIndexName],
