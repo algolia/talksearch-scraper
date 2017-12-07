@@ -1,3 +1,5 @@
+# TalkSearch scraper
+
 ![TalkSearch](logo-talksearch-line@2x.png)
 
 This scraper is an API that indexes captions of YouTube videos. It works either with a channel, a playlist or a video URL.
@@ -6,8 +8,8 @@ This scraper is an API that indexes captions of YouTube videos. It works either 
 > project by [Algolia](https://algolia.com)
 
 [Website](https://community.algolia.com/talksearch) |
-[**embed**](https://github.com/algolia/talksearch-embed) |
-[scraper](https://github.com/algolia/talksearch-scraper) |
+[embed](https://github.com/algolia/talksearch-embed) |
+[**scraper**](https://github.com/algolia/talksearch-scraper) |
 [landing page source](https://github.com/algolia/talksearch)
 
 
