@@ -1,5 +1,6 @@
 import {
   getChannelID,
+  getChannelAvatar,
   getPlaylistID,
   getVideo,
   recursiveGetVideosList,
@@ -101,6 +102,7 @@ export async function index(req, res) {
     objectID: indexName,
     youtubeURL,
     name,
+    avatar: await getChannelAvatar(videos[0].channelId),
   };
   if (accentColor) {
     metadata.accentColor = accentColor;

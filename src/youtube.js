@@ -50,6 +50,8 @@ function getVideoData(video, id) {
     description: video.snippet.description,
     thumbnails: video.snippet.thumbnails.medium,
     channel: video.snippet.channelTitle,
+    channelId: video.snippet.channelId,
+    tags: video.snippet.tags,
     ranking: getRanking(video),
     duration: getDuration(video),
     year: getYear(video),
@@ -60,6 +62,12 @@ export function getChannelID(channelName) {
   return ytAPIReq('channels', {
     params: { forUsername: channelName, part: 'id' },
   }).then(get('data.items[0].id'));
+}
+
+export function getChannelAvatar(channelId) {
+  return ytAPIReq('channels', {
+    params: { id: channelId, part: 'snippet' },
+  }).then(get('data.items[0].snippet.thumbnails.high.url'));
 }
 
 export function getPlaylistID(channelId) {

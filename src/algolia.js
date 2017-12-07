@@ -18,7 +18,7 @@ function setSettings(newIndex) {
         'unordered(speaker)',
         'unordered(text)',
       ],
-      attributesForFaceting: ['videoId', 'speaker', 'year'],
+      attributesForFaceting: ['videoId', 'speaker', 'year', 'tags'],
       attributeForDistinct: 'videoId',
       customRanking: ['asc(start)', 'desc(ranking)'],
       replicas: [replicaIndexName],
@@ -71,6 +71,7 @@ function index(indexName, video, captions) {
       speaker: video.speaker,
       year: video.year,
       duration: video.duration,
+      tags: video.tags,
       objectID: `${video.id}-${caption.start}`,
     };
   });
