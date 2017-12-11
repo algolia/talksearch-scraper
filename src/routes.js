@@ -104,7 +104,7 @@ export async function index(req, res) {
     `getYoutube${data.func}('${data.id}')`
   );
 
-  extractSpeakerAndTitle(videos, speaker);
+  extractSpeakerAndTitle(videos, speaker, title);
 
   const metadata = {
     objectID: indexName,
