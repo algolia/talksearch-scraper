@@ -52,6 +52,11 @@ POST `/index`
     regex: String,     // Optional
     nbSubStr: Number   // Optional
   },
+  title: {
+    extract: Boolean,
+    regex: String,     // Optional if extract is false
+    nbSubStr: Number   // Optional if extract is false
+  },
   accentColor: String  // Optional, css color
 }
 ```
