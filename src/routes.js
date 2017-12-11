@@ -59,21 +59,30 @@ async function recognizeURL(url) {
   return { func, id };
 }
 
-function addSpeaker(videos, speaker) {
+function extract(video, regexObj) {
+  return video.title.replace(
+    new RegExp(regexObj.regex),
+    `$${regexObj.nbSubStr}`
+  );
+}
+
+function extractSpeakerAndTitle(videos, speaker, title) {
   for (const video of videos) {
-    if (speaker.regex) {
-      video.speaker = video.title.replace(
-        new RegExp(speaker.regex),
-        `$${speaker.nbSubStr}`
-      );
-    } else {
-      video.speaker = video.title.split(' - ')[1];
+    if (speaker.extract) {
+      if (speaker.regex) {
+        video.speaker = extract(video, speaker);
+      } else {
+        video.speaker = video.title.split(' - ')[1];
+      }
+    }
+    if (title.extract && title.regex) {
+      video.title = extract(video, title);
     }
   }
 }
 
 export async function index(req, res) {
-  const { body: { youtubeURL, speaker, name, accentColor } } = req;
+  const { body: { youtubeURL, speaker, title, name, accentColor } } = req;
 
   if (!validURL(youtubeURL)) {
     return res.send({
@@ -94,14 +103,15 @@ export async function index(req, res) {
   const { videos, indexName } = await eval(
     `getYoutube${data.func}('${data.id}')`
   );
-  if (speaker.extract) {
-    addSpeaker(videos, speaker);
-  }
+
+  extractSpeakerAndTitle(videos, speaker);
 
   const metadata = {
     objectID: indexName,
     youtubeURL,
     name,
+    speaker,
+    title,
     avatar: await getChannelAvatar(videos[0].channelId),
   };
   if (accentColor) {
