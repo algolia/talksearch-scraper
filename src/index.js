@@ -12,10 +12,8 @@ const basic = auth.basic(
     realm: 'Basic auth',
   },
   (username, password, callback) => {
-    callback(
-      username === process.env.AUTH_USERNAME &&
-        password === process.env.AUTH_PASSWORD
-    );
+    console.log(password);
+    callback(password === process.env.API_TOKEN);
   }
 );
 const authMiddleware = auth.connect(basic);
@@ -24,6 +22,19 @@ const distPath = path.join(__dirname, '..', 'UI', 'dist');
 
 app.use('/static', express.static(`${distPath}/static`));
 app.use(bodyParser.json());
+
+if (process.env.NODE_ENV !== 'production') {
+  // Enable CORS
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', 'http://localhost:8080');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header(
+      'Access-Control-Allow-Headers',
+      'Origin, X-Requested-With, Content-Type, Accept, Authorization'
+    );
+    next();
+  });
+}
 
 app.post('/index', authMiddleware, index);
 app.get('/', (req, res) => {

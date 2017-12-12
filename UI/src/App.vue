@@ -48,7 +48,7 @@ export default {
 }
 
 .logo {
-  width: 500px;
+  width: 400px;
 }
 
 section {

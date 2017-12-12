@@ -18,5 +18,6 @@ fi
 
 curl -H "Content-Type: application/json" \
      -X POST \
+     -u ':test' \
      -d "{\"youtubeURL\":\"$1\", \"name\": \"$2\", \"speaker\": $3, \"title\": $4, \"accentColor\": \"$5\" }" \
-     http://algolia-talksearch.herokuapp.com/index
+     http://localhost:3000/index
