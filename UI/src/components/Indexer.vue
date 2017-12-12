@@ -1,8 +1,9 @@
 <template>
   <section>
-    <h2 class="title">Indexer</h2>
     <div class="columns">
       <div class="column">
+        <h2 class="title">Indexer</h2>
+
         <div class="field">
           <label class="label">Youtube URL</label>
           <div class="control">
@@ -41,15 +42,26 @@
           </div>
         </div>
 
+        <div class="field is-grouped inline">
+          <div class="control">
+            <button v-if="!isLoading" @click="index" class="button is-link">Index</button>
+            <a v-else class="button is-link is-loading">Loading</a>
+          </div>
+        </div>
+
+        <div class="inline or">
+          OR
+        </div>
+
         <div class="field is-grouped">
           <div class="control">
-            <button v-if="!isLoading" @click="index" class="button is-link">Submit</button>
+            <button v-if="!isLoading" @click="reindex" class="button is-link">Reindex all videos</button>
             <a v-else class="button is-link is-loading">Loading</a>
           </div>
         </div>
       </div>
       <div class="column">
-        <label class="label">API Response</label>
+        <h2 class="title">API Response</h2>
         <div class="indexing" v-if="isLoading">
           Indexing... Wait a moment.
         </div>
@@ -111,6 +123,22 @@ export default {
         }
       });
       this.isLoading = false;
+    },
+
+    async reindex() {
+      const ask = confirm('Are you sure you want to reindex everything?');
+      if (!ask) return;
+      this.isLoading = true;
+      this.response = await axios({
+        method: 'get',
+        url: `${process.env['API_URL']}/reindex`,
+        withCredentials: true,
+        auth: {
+          username: null,
+          password: this.token
+        },
+      });
+      this.isLoading = false;
     }
   }
 }
@@ -119,5 +147,16 @@ export default {
 <style>
 .indexing {
   margin-bottom: 20px;
+}
+
+.inline {
+  display: inline-block;
+  float: left;
+  margin-right: 10px;
+}
+
+.or {
+  margin-top: 5px;
+  font-weight: 800;
 }
 </style>

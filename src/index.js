@@ -1,6 +1,6 @@
 import express from 'express';
 import bodyParser from 'body-parser';
-import { index } from './routes';
+import { index, reindex } from './routes';
 import auth from 'http-auth';
 import path from 'path';
 
@@ -36,6 +36,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 app.post('/index', authMiddleware, index);
+app.get('/reindex', authMiddleware, reindex);
 app.get('/', (req, res) => {
   res.sendFile(`${distPath}/index.html`);
 });

@@ -1,3 +1,5 @@
+import algoliasearch from 'algoliasearch';
+
 import {
   getChannelID,
   getChannelAvatar,
@@ -7,6 +9,8 @@ import {
 } from './youtube';
 
 import { indexVideos, indexMetadata } from './algolia';
+
+const client = algoliasearch(process.env.APP_ID, process.env.API_KEY);
 
 async function getYoutubeChannel(channelId) {
   const playlistId = await getPlaylistID(channelId);
@@ -125,4 +129,33 @@ export async function index(req, res) {
     success: true,
     ...report,
   });
+}
+
+function getAllMetadata() {
+  return new Promise((resolve, reject) => {
+    const metadataIndex = client.initIndex('METADATA');
+    const browser = metadataIndex.browseAll();
+    let metadataHits = [];
+    browser.on('result', content => {
+      metadataHits = metadataHits.concat(content.hits);
+    });
+    browser.on('end', () => resolve(metadataHits));
+  });
+}
+
+async function clearIndices(indexNames) {
+  for (const indexName of indexNames) {
+    const indexToClear = client.initIndex(indexName);
+    await indexToClear.clearIndex();
+  }
+}
+
+export async function reindex(req, res) {
+  await clearIndices(['ALL_VIDEOS', 'REPORTS']);
+  const reports = [];
+  const metadataHits = await getAllMetadata();
+  for (const hit of metadataHits) {
+    await index({ body: hit }, { send: report => reports.push(report) });
+  }
+  return res.send(reports);
 }

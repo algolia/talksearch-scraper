@@ -62,6 +62,8 @@ POST `/index`
 }
 ```
 
+GET `/reindex`
+
 ## Env variables
 
 * `APP_ID`
