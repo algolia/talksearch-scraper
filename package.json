@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "babel-watch src/index.js",
-    "start": "NODE_ENV=production babel-node src/index.js"
+    "start": "NODE_ENV=production babel-node src/index.js",
+    "postinstall": "cd UI && npm run build"
   },
   "repository": {
     "type": "git",
