@@ -12,7 +12,6 @@ const basic = auth.basic(
     realm: 'Basic auth',
   },
   (username, password, callback) => {
-    console.log(password);
     callback(password === process.env.API_TOKEN);
   }
 );
