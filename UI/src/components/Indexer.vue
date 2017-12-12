@@ -18,6 +18,13 @@
         </div>
 
         <div class="field">
+          <label class="label">Language (optional, default 'en')</label>
+          <div class="control">
+            <input v-model="data.lang" class="input" type="text" placeholder="fr">
+          </div>
+        </div>
+
+        <div class="field">
           <label class="label">Color (optional)</label>
           <div class="control">
             <input v-model="data.accentColor" class="input" type="text" placeholder="yellow">
@@ -67,6 +74,7 @@ export default {
         youtubeURL: '',
         name: '',
         accentColor: '',
+        lang: '',
         speaker: {
           extract: false,
           regex: '',

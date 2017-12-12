@@ -82,7 +82,7 @@ function extractSpeakerAndTitle(videos, speaker, title) {
 }
 
 export async function index(req, res) {
-  const { body: { youtubeURL, speaker, title, name, accentColor } } = req;
+  const { body: { youtubeURL, speaker, title, name, accentColor, lang } } = req;
 
   if (!validURL(youtubeURL)) {
     return res.send({
@@ -119,7 +119,7 @@ export async function index(req, res) {
   }
   indexMetadata(metadata);
 
-  const report = await indexVideos(videos, indexName);
+  const report = await indexVideos(videos, indexName, lang ? lang : 'en');
   return res.send({
     success: true,
     ...report,

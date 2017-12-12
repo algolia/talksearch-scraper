@@ -99,7 +99,7 @@ export function indexMetadata(metadata) {
   metadataIndex.addObject(metadata);
 }
 
-export async function indexVideos(videos, indexName) {
+export async function indexVideos(videos, indexName, lang) {
   const { finalIndexName, existingReport } = await checkDuplicateIndex(
     indexName
   );
@@ -125,6 +125,7 @@ export async function indexVideos(videos, indexName) {
       try {
         const captions = await getSubtitles({
           videoID: video.id,
+          lang,
         });
         index(indexName, video, captions);
       } catch (err) {
