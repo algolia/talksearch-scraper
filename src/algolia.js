@@ -136,8 +136,6 @@ async function getIndexingReport(videos, indexName, lang) {
 }
 
 export async function indexVideos(videos, indexName, lang) {
-  indexName = indexName.split(' ').join('-');
-
   const { finalIndexName, existingReport } = await checkDuplicateIndex(
     indexName
   );

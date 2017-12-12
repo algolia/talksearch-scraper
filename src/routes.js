@@ -104,9 +104,11 @@ export async function index(req, res) {
   }
 
   // Call getYoutube<Channel|Playlist|Video>
-  const { videos, indexName } = await eval(
+  let { videos, indexName } = await eval(
     `getYoutube${data.func}('${data.id}')`
   );
+
+  indexName = indexName.split(' ').join('-');
 
   extractSpeakerAndTitle(videos, speaker, title);
 
