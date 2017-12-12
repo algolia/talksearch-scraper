@@ -1,7 +1,7 @@
 #! /bin/sh
 
 if [ "$#" -lt 3 ]; then
-    echo "Usage: ./index.sh <YouTubeURL:String> <name:String>
+    echo "Usage: ./index.sh <APIToken:String> <YouTubeURL:String> <name:String>
                   <speaker:Object{extract:Bool, regex:String(optional), nbSubStr:Number(optional)}>
                   <title:Object{extract:Bool, regex:String(optional), nbSubStr:Number(optional)}>
                   <accentColor:String(optional>"
@@ -18,6 +18,6 @@ fi
 
 curl -H "Content-Type: application/json" \
      -X POST \
-     -u ':test' \
-     -d "{\"youtubeURL\":\"$1\", \"name\": \"$2\", \"speaker\": $3, \"title\": $4, \"accentColor\": \"$5\" }" \
-     http://localhost:3000/index
+     -u ":$1" \
+     -d "{\"youtubeURL\":\"$2\", \"name\": \"$3\", \"speaker\": $4, \"title\": $5, \"accentColor\": \"$6\" }" \
+     http://algolia-talksearch.herokuapp.com/index
