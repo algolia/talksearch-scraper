@@ -18,9 +18,9 @@
         </div>
 
         <div class="field">
-          <label class="label">Language (optional, default 'en')</label>
+          <label class="label">Languages separated by a comma (optional, default 'en')</label>
           <div class="control">
-            <input v-model="data.lang" class="input" type="text" placeholder="fr">
+            <input v-model="data.lang" class="input" type="text" placeholder="fr,en">
           </div>
         </div>
 

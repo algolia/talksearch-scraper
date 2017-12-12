@@ -99,6 +99,34 @@ export function indexMetadata(metadata) {
   metadataIndex.addObject(metadata);
 }
 
+async function getIndexingReport(videos, indexName, lang) {
+  const report = {
+    indexName,
+    totalVideos: videos.length,
+    failures: [],
+  };
+
+  const languages = lang.split(',');
+  for (const video of videos) {
+    for (let i = 0; i < languages.length; ++i) {
+      try {
+        const captions = await getSubtitles({
+          videoID: video.id,
+          lang: languages[i],
+        });
+        index(indexName, video, captions);
+        break;
+      } catch (err) {
+        if (i === languages.length - 1) {
+          report.failures.push(video.id);
+        }
+      }
+    }
+  }
+
+  return report;
+}
+
 export async function indexVideos(videos, indexName, lang) {
   const { finalIndexName, existingReport } = await checkDuplicateIndex(
     indexName
@@ -115,24 +143,7 @@ export async function indexVideos(videos, indexName, lang) {
     existingReport.indexName = finalIndexName;
     return existingReport;
   } else {
-    const report = {
-      indexName,
-      totalVideos: videos.length,
-      failures: [],
-    };
-
-    for (const video of videos) {
-      try {
-        const captions = await getSubtitles({
-          videoID: video.id,
-          lang,
-        });
-        index(indexName, video, captions);
-      } catch (err) {
-        report.failures.push(video.id);
-      }
-    }
-
+    const report = await getIndexingReport(videos, indexName, lang);
     report.indexedVideos = report.totalVideos - report.failures.length;
     if (report.indexedVideos > 0) {
       reportIndex.addObject(report);
