@@ -112,6 +112,7 @@ export async function index(req, res) {
     name,
     speaker,
     title,
+    lang,
     avatar: await getChannelAvatar(videos[0].channelId),
   };
   if (accentColor) {
