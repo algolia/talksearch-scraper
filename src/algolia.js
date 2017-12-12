@@ -118,6 +118,14 @@ async function getIndexingReport(videos, indexName, lang) {
         break;
       } catch (err) {
         if (i === languages.length - 1) {
+          const fakeCaptions = [
+            {
+              start: 0,
+              text: '',
+              objectID: `${video.id}-0`,
+            },
+          ];
+          index(indexName, video, fakeCaptions);
           report.failures.push(video.id);
         }
       }
@@ -128,6 +136,8 @@ async function getIndexingReport(videos, indexName, lang) {
 }
 
 export async function indexVideos(videos, indexName, lang) {
+  indexName = indexName.split(' ').join('-');
+
   const { finalIndexName, existingReport } = await checkDuplicateIndex(
     indexName
   );
