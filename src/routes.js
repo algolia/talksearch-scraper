@@ -72,14 +72,14 @@ function extract(video, regexObj) {
 
 function extractSpeakerAndTitle(videos, speaker, title) {
   for (const video of videos) {
-    if (speaker.extract) {
+    if (speaker && speaker.extract) {
       if (speaker.regex) {
         video.speaker = extract(video, speaker);
       } else {
         video.speaker = video.title.split(' - ')[1];
       }
     }
-    if (title.extract && title.regex) {
+    if (title && title.extract && title.regex) {
       video.title = extract(video, title);
     }
   }
