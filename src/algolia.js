@@ -84,6 +84,7 @@ function index(indexName, video, captions) {
 }
 
 async function checkDuplicateIndex(indexName) {
+  reportIndex.clearCache();
   // If channel/playlist/video index already exists, copy the existing index
   const content = await reportIndex.search(indexName);
   if (content.hits.length > 0 && content.hits[0].indexName === indexName) {
