@@ -5,10 +5,10 @@
     </div>
     <div class="tabs is-centered">
       <ul>
-        <li :class="indexerPage ? 'is-active' : ''">
+        <li :class="{ 'is-active': indexerPage }">
           <a @click="changePage(true)">Indexer</a>
         </li>
-        <li :class="!indexerPage ? 'is-active' : ''">
+        <li :class="{ 'is-active': !indexerPage }">
           <a @click="changePage(false)">Regex Tester</a>
         </li>
       </ul>

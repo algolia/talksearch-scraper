@@ -4,36 +4,25 @@
       <div class="column">
         <h2 class="title">Indexer</h2>
 
-        <div class="field">
-          <label class="label">Youtube URL</label>
-          <div class="control">
-            <input v-model="data.youtubeURL" class="input" type="text" placeholder="https://www.youtube.com/user/dotconferences">
-          </div>
+        <div class="tabs is-toggle is-fullwidth">
+          <ul>
+            <li :class="{ 'is-active': pages.index }">
+              <a @click="changePage('index')">
+                <span>Index</span>
+              </a>
+            </li>
+            <li :class="{ 'is-active': pages.reindexOne }">
+              <a @click="changePage('reindexOne')">
+                <span>Reindex an index</span>
+              </a>
+            </li>
+            <li :class="{ 'is-active': pages.reindex }">
+              <a @click="changePage('reindex')">
+                <span>Reindex everything</span>
+              </a>
+            </li>
+          </ul>
         </div>
-
-        <div class="field">
-          <label class="label">Conference Name</label>
-          <div class="control">
-            <input v-model="data.name" class="input" type="text" placeholder="dotJS">
-          </div>
-        </div>
-
-        <div class="field">
-          <label class="label">Languages separated by a comma (optional, default 'en')</label>
-          <div class="control">
-            <input v-model="data.lang" class="input" type="text" placeholder="fr,en">
-          </div>
-        </div>
-
-        <div class="field">
-          <label class="label">Color (optional)</label>
-          <div class="control">
-            <input v-model="data.accentColor" class="input" type="text" placeholder="yellow">
-          </div>
-        </div>
-
-        <extract label="Speaker" :obj="data.speaker" />
-        <extract label="Title" :obj="data.title" />
 
         <div class="field">
           <label class="label">API token</label>
@@ -42,21 +31,68 @@
           </div>
         </div>
 
-        <div class="field is-grouped inline">
-          <div class="control">
-            <button v-if="!isLoading" @click="index" class="button is-link">Index</button>
-            <a v-else class="button is-link is-loading">Loading</a>
+        <div v-if="pages.index">
+          <div class="field">
+            <label class="label">Youtube URL</label>
+            <div class="control">
+              <input v-model="data.youtubeURL" class="input" type="text" placeholder="https://www.youtube.com/user/dotconferences">
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="label">Conference Name</label>
+            <div class="control">
+              <input v-model="data.name" class="input" type="text" placeholder="dotJS">
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="label">Languages separated by a comma (optional, default 'en')</label>
+            <div class="control">
+              <input v-model="data.lang" class="input" type="text" placeholder="fr,en">
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="label">Color (optional)</label>
+            <div class="control">
+              <input v-model="data.accentColor" class="input" type="text" placeholder="yellow">
+            </div>
+          </div>
+
+          <extract label="Speaker" :obj="data.speaker" />
+          <extract label="Title" :obj="data.title" />
+
+          <div class="field is-grouped">
+            <div class="control">
+              <button v-if="!isLoading" @click="index" class="button is-link">Submit</button>
+              <a v-else class="button is-link is-loading">Loading</a>
+            </div>
           </div>
         </div>
 
-        <div class="inline or">
-          OR
+        <div v-if="pages.reindexOne">
+          <div class="field">
+            <label class="label">Index name</label>
+            <div class="control">
+              <input v-model="indexName" class="input" type="text" placeholder="Algolia-playlist-PLuHdbqhRgWHJg9eOFCl5dgLvVjd_DFz8O">
+            </div>
+          </div>
+
+          <div class="field is-grouped">
+            <div class="control">
+              <button v-if="!isLoading" @click="reindex" class="button is-link">Reindex this specific index</button>
+              <a v-else class="button is-link is-loading">Loading</a>
+            </div>
+          </div>
         </div>
 
-        <div class="field is-grouped">
-          <div class="control">
-            <button v-if="!isLoading" @click="reindex" class="button is-link">Reindex all videos</button>
-            <a v-else class="button is-link is-loading">Loading</a>
+        <div v-if="pages.reindex">
+          <div class="field is-grouped">
+            <div class="control">
+              <button v-if="!isLoading" @click="reindex" class="button is-link">Reindex all videos</button>
+              <a v-else class="button is-link is-loading">Loading</a>
+            </div>
           </div>
         </div>
       </div>
@@ -100,7 +136,13 @@ export default {
       },
       token: '',
       response: {},
-      isLoading: false
+      isLoading: false,
+      pages: {
+        index: true,
+        reindexOne: false,
+        reindex: false
+      },
+      indexName: ''
     }
   },
 
@@ -126,19 +168,36 @@ export default {
     },
 
     async reindex() {
-      const ask = confirm('Are you sure you want to reindex everything?');
-      if (!ask) return;
+      if (!this.indexName) {
+        const ask = confirm('Are you sure you want to reindex everything?');
+        if (!ask) return;
+      }
       this.isLoading = true;
       this.response = await axios({
-        method: 'get',
+        method: 'post',
         url: `${process.env['API_URL']}/reindex`,
+        data: {
+          indexName: this.indexName,
+        },
         withCredentials: true,
         auth: {
           username: null,
           password: this.token
         },
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        }
       });
       this.isLoading = false;
+    },
+
+    changePage(newPage) {
+      for (const page in this.pages) {
+        this.pages[page] = false;
+      }
+      this.indexName = '';
+      this.pages[newPage] = true;
     }
   }
 }
@@ -147,16 +206,5 @@ export default {
 <style>
 .indexing {
   margin-bottom: 20px;
-}
-
-.inline {
-  display: inline-block;
-  float: left;
-  margin-right: 10px;
-}
-
-.or {
-  margin-top: 5px;
-  font-weight: 800;
 }
 </style>

@@ -36,7 +36,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 app.post('/index', authMiddleware, index);
-app.get('/reindex', authMiddleware, reindex);
+app.post('/reindex', authMiddleware, reindex);
 app.get('/', (req, res) => {
   res.sendFile(`${distPath}/index.html`);
 });

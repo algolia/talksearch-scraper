@@ -133,16 +133,55 @@ export async function index(req, res) {
   });
 }
 
-function getAllMetadata() {
+function getAllMetadata(indexName) {
   return new Promise((resolve, reject) => {
     const metadataIndex = client.initIndex('METADATA');
-    const browser = metadataIndex.browseAll();
-    let metadataHits = [];
-    browser.on('result', content => {
-      metadataHits = metadataHits.concat(content.hits);
-    });
-    browser.on('end', () => resolve(metadataHits));
+    if (indexName) {
+      metadataIndex.getObject(indexName, (err, content) => {
+        if (err) {
+          throw err;
+        }
+        resolve([content]);
+      });
+    } else {
+      const browser = metadataIndex.browseAll();
+      let metadataHits = [];
+      browser.on('result', content => {
+        metadataHits = metadataHits.concat(content.hits);
+      });
+      browser.on('end', () => resolve(metadataHits));
+    }
   });
+}
+
+function clearIndexByIndexName(indexNameToClear, indexName) {
+  return new Promise((resolve, reject) => {
+    let hits = [];
+    const indexToClear = client.initIndex(indexNameToClear);
+    indexToClear.browse(
+      '',
+      { filters: `indexName:${indexName}` },
+      function browseDone(err, content) {
+        if (err) {
+          throw err;
+        }
+        hits = hits.concat(content.hits);
+        if (content.cursor) {
+          indexToClear.browseFrom(content.cursor, browseDone);
+        } else {
+          indexToClear.deleteObjects(hits.map(hit => hit.objectID), () => {
+            resolve();
+          });
+        }
+      }
+    );
+  });
+}
+
+async function clearIndicesByIndexName(indices, indexName) {
+  for (const indexNameToClear of indices) {
+    await clearIndexByIndexName(indexNameToClear, indexName);
+  }
 }
 
 async function clearIndices(indexNames) {
@@ -153,9 +192,15 @@ async function clearIndices(indexNames) {
 }
 
 export async function reindex(req, res) {
-  await clearIndices(['ALL_VIDEOS', 'REPORTS']);
+  const { body: { indexName } } = req;
+  const indicesToClear = ['ALL_VIDEOS', 'REPORTS'];
+  if (indexName) {
+    await clearIndicesByIndexName(indicesToClear, indexName);
+  } else {
+    await clearIndices(indicesToClear);
+  }
   const reports = [];
-  const metadataHits = await getAllMetadata();
+  const metadataHits = await getAllMetadata(indexName);
   for (const hit of metadataHits) {
     await index({ body: hit }, { send: report => reports.push(report) });
   }
