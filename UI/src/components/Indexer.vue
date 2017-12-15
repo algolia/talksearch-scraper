@@ -27,7 +27,7 @@
         <div class="field">
           <label class="label">API token</label>
           <div class="control">
-            <input v-model="token" class="input" type="text">
+            <input v-model="token" class="input" type="password">
           </div>
         </div>
 
@@ -35,7 +35,7 @@
           <div class="field">
             <label class="label">Youtube URL</label>
             <div class="control">
-              <input v-model="data.youtubeURL" class="input" type="text" placeholder="https://www.youtube.com/user/dotconferences">
+              <input v-model="data.youtubeURL" class="input" type="url" placeholder="https://www.youtube.com/user/dotconferences">
             </div>
           </div>
 
@@ -56,7 +56,7 @@
           <div class="field">
             <label class="label">Color (optional)</label>
             <div class="control">
-              <input v-model="data.accentColor" class="input" type="text" placeholder="yellow">
+              <input v-model="data.accentColor" class="input" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="yellow">
             </div>
           </div>
 
@@ -75,7 +75,7 @@
           <div class="field">
             <label class="label">Index name</label>
             <div class="control">
-              <input v-model="indexName" class="input" type="text" placeholder="Algolia-playlist-PLuHdbqhRgWHJg9eOFCl5dgLvVjd_DFz8O">
+              <input v-model="indexName" class="input" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Algolia-playlist-PLuHdbqhRgWHJg9eOFCl5dgLvVjd_DFz8O">
             </div>
           </div>
 
@@ -113,7 +113,7 @@ import axios from 'axios';
 
 export default {
   components: {
-    extract: Extract
+    extract: Extract,
   },
 
   data() {
@@ -126,12 +126,12 @@ export default {
         speaker: {
           extract: false,
           regex: '',
-          nbSubStr: ''
+          nbSubStr: '',
         },
         title: {
           extract: false,
           regex: '',
-          nbSubStr: ''
+          nbSubStr: '',
         },
       },
       token: '',
@@ -140,10 +140,10 @@ export default {
       pages: {
         index: true,
         reindexOne: false,
-        reindex: false
+        reindex: false,
       },
-      indexName: ''
-    }
+      indexName: '',
+    };
   },
 
   methods: {
@@ -157,12 +157,12 @@ export default {
         withCredentials: true,
         auth: {
           username: null,
-          password: this.token
+          password: this.token,
         },
         headers: {
-          'Accept': 'application/json',
+          Accept: 'application/json',
           'Content-Type': 'application/json',
-        }
+        },
       });
       this.isLoading = false;
     },
@@ -182,12 +182,12 @@ export default {
         withCredentials: true,
         auth: {
           username: null,
-          password: this.token
+          password: this.token,
         },
         headers: {
-          'Accept': 'application/json',
+          Accept: 'application/json',
           'Content-Type': 'application/json',
-        }
+        },
       });
       this.isLoading = false;
     },
@@ -198,9 +198,9 @@ export default {
       }
       this.indexName = '';
       this.pages[newPage] = true;
-    }
-  }
-}
+    },
+  },
+};
 </script>
 
 <style>
