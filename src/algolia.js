@@ -25,7 +25,7 @@ function setSettings(newIndex) {
     },
     err => {
       if (err) {
-        console.err(err);
+        console.error(err);
         return;
       }
       const replicaIndex = client.initIndex(replicaIndexName);
@@ -42,7 +42,7 @@ function setSettings(newIndex) {
 function addVideoToGlobalIndex(indexName, video) {
   globalIndex.search({ query: video.title }, (err, content) => {
     if (err) {
-      console.err(err);
+      console.error(err);
       return;
     }
     if (content.hits.length === 0 || content.hits[0].id !== video.id) {
