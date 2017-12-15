@@ -85,6 +85,13 @@ function extractSpeakerAndTitle(videos, speaker, title) {
   }
 }
 
+function getValidIndexName(indexName) {
+  return indexName
+    .replace(/[?&/]/g, '')
+    .split(' ')
+    .join('-');
+}
+
 export async function index(req, res) {
   const { body: { youtubeURL, speaker, title, name, accentColor, lang } } = req;
 
@@ -108,7 +115,7 @@ export async function index(req, res) {
     `getYoutube${data.func}('${data.id}')`
   );
 
-  indexName = indexName.split(' ').join('-');
+  indexName = getValidIndexName(indexName);
 
   extractSpeakerAndTitle(videos, speaker, title);
 
