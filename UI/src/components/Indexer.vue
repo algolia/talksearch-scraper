@@ -27,7 +27,7 @@
         <div class="field">
           <label class="label">API token</label>
           <div class="control">
-            <input v-model="token" class="input" type="password">
+            <input v-model="token" class="input" type="password" required>
           </div>
         </div>
 
@@ -35,14 +35,14 @@
           <div class="field">
             <label class="label">Youtube URL</label>
             <div class="control">
-              <input v-model="data.youtubeURL" class="input" type="url" placeholder="https://www.youtube.com/user/dotconferences">
+              <input v-model="data.youtubeURL" class="input" type="url" placeholder="https://www.youtube.com/user/dotconferences" required>
             </div>
           </div>
 
           <div class="field">
             <label class="label">Conference Name</label>
             <div class="control">
-              <input v-model="data.name" class="input" type="text" placeholder="dotJS">
+              <input v-model="data.name" class="input" type="text" placeholder="dotJS" required>
             </div>
           </div>
 
@@ -75,7 +75,7 @@
           <div class="field">
             <label class="label">Index name</label>
             <div class="control">
-              <input v-model="indexName" class="input" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Algolia-playlist-PLuHdbqhRgWHJg9eOFCl5dgLvVjd_DFz8O">
+              <input v-model="indexName" class="input" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Algolia-playlist-PLuHdbqhRgWHJg9eOFCl5dgLvVjd_DFz8O" required>
             </div>
           </div>
 
