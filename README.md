@@ -63,6 +63,12 @@ POST `/index`
 ```
 
 GET `/reindex`
+```
+{
+    indexName: String // Optional, reindex either one index
+                         or all of them if indexName is null
+}
+```
 
 ## Env variables
 
@@ -70,3 +76,14 @@ GET `/reindex`
 * `API_KEY`
 * `YOUTUBE_API_KEY`
 * `API_TOKEN`
+
+## Deploy to heroku
+
+The heroku `master` branch is up-to-date with this `master` branch.
+
+`git push heroku master`
+
+## TODO
+
+- [ ] Put the admin page behind an Okta wall/proxy
+- [ ] Extract tags using [https://indico.io/](https://indico.io/)
