@@ -4,7 +4,7 @@
       <div class="field">
         <label class="label">{{ label }}</label>
         <div class="select">
-          <select v-model="obj.extract">
+          <select v-model="obj.extract" @input="updateStore" :id="label+'.extract'">
             <option :value="false">false</option>
             <option :value="true">true</option>
           </select>
@@ -36,6 +36,16 @@ export default {
   props: {
     label: String,
     obj: Object
+  },
+
+  methods: {
+    updateStore(e){
+      const payload = {
+        name: e.target.id,
+        val: e.target.value
+      }
+      this.$store.dispatch('updateStore', payload);
+    }
   }
 }
 </script>

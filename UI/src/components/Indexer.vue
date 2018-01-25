@@ -27,36 +27,36 @@
         <div class="field">
           <label class="label">API token</label>
           <div class="control">
-            <input v-model="token" class="input" type="password" required>
+            <input v-model="token" @input="updateStore" id="token" class="input" type="password" required>
           </div>
         </div>
 
         <div v-if="pages.index">
           <div class="field">
-            <label class="label">Youtube URL</label>
+            <label class="label">Youtube URL (Can be a playlist or a channel URL)</label>
             <div class="control">
-              <input v-model="data.youtubeURL" class="input" type="url" placeholder="https://www.youtube.com/user/dotconferences" required>
+              <input v-model="data.youtubeURL" @input="updateStore" id="youtubeURL" class="input" type="url" placeholder="https://www.youtube.com/user/dotconferences" required>
             </div>
           </div>
 
           <div class="field">
             <label class="label">Conference Name</label>
             <div class="control">
-              <input v-model="data.name" class="input" type="text" placeholder="dotJS" required>
+              <input v-model="data.name" @input="updateStore" id="name" class="input" type="text" placeholder="dotJS" required>
             </div>
           </div>
 
           <div class="field">
             <label class="label">Languages separated by a comma (optional, default 'en')</label>
             <div class="control">
-              <input v-model="data.lang" class="input" type="text" placeholder="fr,en">
+              <input v-model="data.lang" @input="updateStore" id="lang" class="input" type="text" placeholder="fr,en">
             </div>
           </div>
 
           <div class="field">
             <label class="label">Color (optional)</label>
             <div class="control">
-              <input v-model="data.accentColor" class="input" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="yellow">
+              <input v-model="data.accentColor" @input="updateStore" id="accentColor" class="input" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="yellow">
             </div>
           </div>
 
@@ -117,24 +117,28 @@ export default {
   },
 
   data() {
+    // Define the store
+    const store = this.$store.state.indexerSettings;
+
+    // Return a data object to bind to elements, and pull from store if object.key is set
     return {
       data: {
-        youtubeURL: '',
-        name: '',
-        accentColor: '',
-        lang: '',
+        youtubeURL: store.youtubeURL,
+        name: store.name,
+        accentColor: store.accentColor,
+        lang: store.lang,
         speaker: {
-          extract: false,
+          extract: store.speaker.extract,
           regex: '',
           nbSubStr: '',
         },
         title: {
-          extract: false,
+          extract: store.title.extract,
           regex: '',
           nbSubStr: '',
         },
       },
-      token: '',
+      token: store.token,
       response: {},
       isLoading: false,
       pages: {
@@ -147,6 +151,15 @@ export default {
   },
 
   methods: {
+
+    updateStore(e){
+      const payload = {
+        name: e.target.id,
+        val: e.target.value
+      }
+      this.$store.dispatch('updateStore', payload);
+    },
+
     async index() {
       this.isLoading = true;
       const data = this.data;
@@ -165,6 +178,7 @@ export default {
         },
       });
       this.isLoading = false;
+      this.$store.dispatch('emptyState', []);
     },
 
     async reindex() {
@@ -196,6 +210,7 @@ export default {
       for (const page in this.pages) {
         this.pages[page] = false;
       }
+      
       this.indexName = '';
       this.pages[newPage] = true;
     },
