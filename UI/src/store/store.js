@@ -34,20 +34,20 @@ const actions = {
 
 // Define store mutations - all actions must pass through here
 const mutations = {
-
+  
   EMPTY_STORE: (state, payload) => {
     state.indexerSettings = payload
   },
 
   UPDATE_STORE: (state, payload) => {
     if (payload.name.includes('.')) {
-      let obj = payload.name.split('.')
-      let secondaryObj = new Object()
-      let valueAsBoolean = (payload.val == 'true')
-      secondaryObj[obj[1]] = valueAsBoolean
+      let obj = payload.name.split('.') // Split the 'id' of the form field
+      let secondaryObj = new Object() // Create new object
+      let valueAsBoolean = (payload.val == 'true') // returns false if string passed is 'false'
+      secondaryObj[obj[1]] = valueAsBoolean // Set {extract: true} or {extract: false}
       state.indexerSettings[obj[0].toLowerCase()] = secondaryObj
     } else {
-      state.indexerSettings[payload.name] = payload.val
+      state.indexerSettings[payload.name] = payload.val // Use if value is singluar and not an Object
     }
     
   }
