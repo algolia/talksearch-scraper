@@ -75,7 +75,7 @@
           <div class="field">
             <label class="label">Index name</label>
             <div class="control">
-              <input v-model="indexName" class="input" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Algolia-playlist-PLuHdbqhRgWHJg9eOFCl5dgLvVjd_DFz8O" required>
+              <input v-model="indexName" @input="updateStore" id="indexName" class="input" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Algolia-playlist-PLuHdbqhRgWHJg9eOFCl5dgLvVjd_DFz8O" required>
             </div>
           </div>
 
@@ -146,7 +146,7 @@ export default {
         reindexOne: false,
         reindex: false,
       },
-      indexName: '',
+      indexName: store.title.indexName,
     };
   },
 
