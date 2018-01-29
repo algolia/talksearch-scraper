@@ -2,9 +2,9 @@
   <section>
     <h2 class="title">Regex Tester</h2>
     <div class="field">
-      <label class="label">String</label>
+      <label class="label">Video Title</label>
       <div class="control">
-        <input v-model="string" class="input" type="text">
+        <input v-model="videoTitle" class="input" type="text">
       </div>
     </div>
 
@@ -23,7 +23,7 @@
     </div>
 
     <div>
-      <b>Result:</b> {{ string.replace(new RegExp(regex), `$${nbSubStr}`) }}
+      <b>Result:</b> {{ videoTitle.replace(new RegExp(regex), `$${nbSubStr}`) }}
     </div>
   </section>
 </template>
@@ -32,7 +32,7 @@
 export default {
   data() {
     return {
-      string: 'Jonathan Martin: Async patterns to scale your multicore JavaScript elegantly.',
+      videoTitle: 'Jonathan Martin: Async patterns to scale your multicore JavaScript elegantly.',
       regex: '(.*):.*',
       nbSubStr: 1
     }
