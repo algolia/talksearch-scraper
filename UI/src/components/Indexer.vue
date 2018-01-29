@@ -178,7 +178,7 @@ export default {
         },
       });
       this.isLoading = false;
-      this.$store.dispatch('emptyState', []);
+      this.$store.dispatch('emptyState', {});
     },
 
     async reindex() {
