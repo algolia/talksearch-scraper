@@ -177,6 +177,7 @@ export default {
           'Content-Type': 'application/json',
         },
       });
+
       this.isLoading = false;
       this.$store.dispatch('emptyState', {});
     },

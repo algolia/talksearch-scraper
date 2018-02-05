@@ -109,11 +109,13 @@ export async function index(req, res) {
       message: 'The URL does not match a YouTube channel, playlist nor video.',
     });
   }
-
+  
   // Call getYoutube<Channel|Playlist|Video>
   let { videos, indexName } = await eval(
     `getYoutube${data.func}('${data.id}')`
-  );
+  ).catch(reason => {
+    console.log(reason)
+  });
 
   indexName = getValidIndexName(indexName);
 

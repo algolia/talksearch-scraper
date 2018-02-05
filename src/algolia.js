@@ -56,7 +56,6 @@ function addVideoToGlobalIndex(indexName, video) {
 
 function index(indexName, video, captions) {
   const algoliaIndex = client.initIndex(indexName);
-
   const captionsWithObjectID = captions.map(caption => {
     delete caption.dur;
     return {

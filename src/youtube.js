@@ -12,6 +12,8 @@ function ytAPIReq(endpoint, options) {
       ...(options.params || {}),
       key: API_KEY,
     },
+  }).catch(reason => {
+    console.log(reason)
   });
 }
 
@@ -83,7 +85,13 @@ export async function getVideo(videoId) {
       part: 'snippet,contentDetails,statistics',
     },
   });
-  return getVideoData(items[0], items[0].id);
+
+  // Skip video that returns with no attributes such as private videos
+  if (items[0]) {
+    return getVideoData(items[0], items[0].id);
+  } else {
+    return false;
+  }
 }
 
 export async function recursiveGetVideosList(
