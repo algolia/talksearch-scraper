@@ -84,6 +84,9 @@ function index(indexName, video, captions) {
 
 async function checkDuplicateIndex(indexName) {
   reportIndex.clearCache();
+
+  // If switch of duplication is selected, skip this check
+
   // If channel/playlist/video index already exists, copy the existing index
   const content = await reportIndex.search(indexName);
   if (content.hits.length > 0 && content.hits[0].indexName === indexName) {
@@ -135,22 +138,35 @@ async function getIndexingReport(videos, indexName, lang) {
   return report;
 }
 
-export async function indexVideos(videos, indexName, lang) {
-  const { finalIndexName, existingReport } = await checkDuplicateIndex(
-    indexName
-  );
+export async function indexVideos(videos, indexName, lang, checkForDuplicates) {
 
-  if (existingReport) {
-    client.copyIndex(indexName, finalIndexName, (err, content) => {
-      if (err) {
-        console.error(err);
+  if (checkForDuplicates) {
+    const { finalIndexName, existingReport } = await checkDuplicateIndex(
+      indexName
+    );
+
+    if (existingReport) {
+      client.copyIndex(indexName, finalIndexName, (err, content) => {
+        if (err) {
+          console.error(err);
+        }
+      });
+      delete existingReport._highlightResult;
+      delete existingReport.objectID;
+      existingReport.indexName = finalIndexName;
+      return existingReport;
+    } else {
+      const report = await getIndexingReport(videos, indexName, lang);
+      report.indexedVideos = report.totalVideos - report.failures.length;
+      if (report.indexedVideos > 0) {
+        reportIndex.addObject(report);
       }
-    });
-    delete existingReport._highlightResult;
-    delete existingReport.objectID;
-    existingReport.indexName = finalIndexName;
-    return existingReport;
+      return report;
+    }
   } else {
+    const existingReport = null;
+    const finalIndexName = indexName;
+
     const report = await getIndexingReport(videos, indexName, lang);
     report.indexedVideos = report.totalVideos - report.failures.length;
     if (report.indexedVideos > 0) {
@@ -158,4 +174,6 @@ export async function indexVideos(videos, indexName, lang) {
     }
     return report;
   }
+
+
 }

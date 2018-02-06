@@ -12,13 +12,13 @@ import { indexVideos, indexMetadata } from './algolia';
 
 const client = algoliasearch(process.env.APP_ID, process.env.API_KEY);
 
-async function getYoutubeChannel(channelId) {
+async function getYoutubeChannel(channelId, customIndexName) {
   const playlistId = await getPlaylistID(channelId);
   const videos = await recursiveGetVideosList(channelId, playlistId);
   return { videos, indexName: videos[0].channel };
 }
 
-async function getYoutubeVideo(videoId) {
+async function getYoutubeVideo(videoId, customIndexName) {
   const video = await getVideo(videoId);
   return {
     videos: [video],
@@ -26,11 +26,20 @@ async function getYoutubeVideo(videoId) {
   };
 }
 
-async function getYoutubePlaylist(playlistId) {
+async function getYoutubePlaylist(playlistId, customIndexName) {
   const videos = await recursiveGetVideosList(null, playlistId);
+
+  function resolveIndexName() {
+    if (customIndexName.length > 0) {
+      return customIndexName
+    } else {
+      return `${videos[0].channel}-playlist-${playlistId}`
+    }
+  }
+
   return {
     videos,
-    indexName: `${videos[0].channel}-playlist-${playlistId}`,
+    indexName: resolveIndexName(),
   };
 }
 
@@ -93,7 +102,7 @@ function getValidIndexName(indexName) {
 }
 
 export async function index(req, res) {
-  const { body: { youtubeURL, speaker, title, name, accentColor, lang } } = req;
+  const { body: { youtubeURL, speaker, title, name, accentColor, lang, customIndexName, checkForDuplicates } } = req;
 
   if (!validURL(youtubeURL)) {
     return res.send({
@@ -109,12 +118,13 @@ export async function index(req, res) {
       message: 'The URL does not match a YouTube channel, playlist nor video.',
     });
   }
-  
+
+
   // Call getYoutube<Channel|Playlist|Video>
   let { videos, indexName } = await eval(
-    `getYoutube${data.func}('${data.id}')`
+    `getYoutube${data.func}('${data.id}', '${customIndexName}')`
   ).catch(reason => {
-    console.log(reason)
+    console.log(reason);
   });
 
   indexName = getValidIndexName(indexName);

@@ -47,6 +47,23 @@
           </div>
 
           <div class="field">
+            <label class="label">Custom Index Name / Add to existing index</label>
+            <div class="control">
+              <input v-model="data.customIndexName" @input="updateStore" id="customIndexName" class="input" type="text" placeholder="dotJSConfs" required>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="label">Check for duplicate index</label>
+            <div class="select">
+              <select v-model="data.checkForDuplicates" @input="updateStore" id="checkForDuplicates">
+                <option :value="false">false</option>
+                <option :value="true">true</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
             <label class="label">Languages separated by a comma (optional, default 'en')</label>
             <div class="control">
               <input v-model="data.lang" @input="updateStore" id="lang" class="input" type="text" placeholder="fr,en">
@@ -125,6 +142,8 @@ export default {
       data: {
         youtubeURL: store.youtubeURL,
         name: store.name,
+        customIndexName: store.customIndexName,
+        checkForDuplicates: store.checkForDuplicates,
         accentColor: store.accentColor,
         lang: store.lang,
         speaker: {
