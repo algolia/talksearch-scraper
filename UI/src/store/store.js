@@ -7,6 +7,7 @@ Vue.use(Vuex);
 // Init store
 const state = {
   indexerSettings: {
+    checkForDuplicates: true,
     speaker: {
       extract: false,
     },
