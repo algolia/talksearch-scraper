@@ -21,7 +21,7 @@
   },
   "homepage": "https://github.com/algolia/talksearch-scraper#readme",
   "dependencies": {
-    "algoliasearch": "3.24.8",
+    "algoliasearch": "3.24.11",
     "axios": "0.17.1",
     "babel-cli": "6.26.0",
     "babel-plugin-transform-object-rest-spread": "6.26.0",
