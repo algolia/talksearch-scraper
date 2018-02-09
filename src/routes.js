@@ -30,16 +30,20 @@ async function getYoutubePlaylist(playlistId, customIndexName) {
   const videos = await recursiveGetVideosList(null, playlistId);
 
   function resolveIndexName() {
-    if (customIndexName.length > 0) {
-      return customIndexName
-    } else {
+    if (
+      typeof customIndexName === 'undefined' ||
+      customIndexName === 'undefined' ||
+      customIndexName === undefined
+    ) {
       return `${videos[0].channel}-playlist-${playlistId}`
+    } else {
+      return customIndexName;
     }
   }
 
   return {
     videos,
-    indexName: resolveIndexName(),
+    indexName: resolveIndexName()
   };
 }
 
