@@ -85,8 +85,6 @@ function index(indexName, video, captions) {
 async function checkDuplicateIndex(indexName) {
   reportIndex.clearCache();
 
-  // If switch of duplication is selected, skip this check
-
   // If channel/playlist/video index already exists, copy the existing index
   const content = await reportIndex.search(indexName);
   if (content.hits.length > 0 && content.hits[0].indexName === indexName) {
@@ -102,6 +100,8 @@ export function indexMetadata(metadata) {
   metadataIndex.addObject(metadata);
 }
 
+
+// TODO: Add private video failures to this
 async function getIndexingReport(videos, indexName, lang) {
   const report = {
     indexName,
@@ -139,7 +139,6 @@ async function getIndexingReport(videos, indexName, lang) {
 }
 
 export async function indexVideos(videos, indexName, lang, checkForDuplicates) {
-
   if (checkForDuplicates) {
     const { finalIndexName, existingReport } = await checkDuplicateIndex(
       indexName
@@ -165,7 +164,6 @@ export async function indexVideos(videos, indexName, lang, checkForDuplicates) {
     }
   } else {
     const existingReport = null;
-    const finalIndexName = indexName;
 
     const report = await getIndexingReport(videos, indexName, lang);
     report.indexedVideos = report.totalVideos - report.failures.length;

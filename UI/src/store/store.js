@@ -35,12 +35,20 @@ const actions = {
 
 // Define store mutations - all actions must pass through here
 const mutations = {
-  
   EMPTY_STORE: (state, payload) => {
     state.indexerSettings = payload
   },
 
   UPDATE_STORE: (state, payload) => {
+    console.log(payload);
+
+    if (payload.name == 'checkForDuplicates') {
+      if (payload.val == 'true') {
+        payload.val = true;
+      } else {
+        payload.val = false;
+      }
+    }
     if (payload.name.includes('.')) {
       let obj = payload.name.split('.') // Split the 'id' of the form field
       let secondaryObj = new Object() // Create new object

@@ -57,8 +57,8 @@
             <label class="label">Check for duplicate index</label>
             <div class="select">
               <select v-model="data.checkForDuplicates" @input="updateStore" id="checkForDuplicates">
-                <option :value="false">false</option>
-                <option :value="true">true</option>
+                <option :value="false">No</option>
+                <option :value="true">Yes</option>
               </select>
             </div>
           </div>
