@@ -1,131 +1,164 @@
-import { get } from 'lodash/fp';
 import axios from 'axios';
+import urlParser from 'url';
+import qs from 'query-string';
+import _ from 'lodash';
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 
-const API_KEY = process.env.YOUTUBE_API_KEY;
-const BASE_URL = 'https://www.googleapis.com/youtube/v3/';
-
-function ytAPIReq(endpoint, options) {
-  return axios({
-    ...options,
-    url: `${BASE_URL}${endpoint}`,
-    params: {
-      ...(options.params || {}),
-      key: API_KEY,
-    },
-  }).catch(reason => {
-    console.log(reason)
-  });
-}
-
-function getYear(video) {
-  return new Date(video.snippet.publishedAt).getFullYear();
-}
-
-function getDuration(video) {
-  let duration = 0;
-  const videoDuration = video.contentDetails.duration;
-  const minutes = videoDuration.replace(/PT(.*)M.*/, '$1');
-  if (minutes !== videoDuration) {
-    duration += parseInt(minutes, 10) * 60;
-  }
-  const seconds = videoDuration.replace(/PT(.*M)?(.*)S/, '$2');
-  if (seconds !== videoDuration) {
-    duration += parseInt(seconds, 10);
-  }
-  return duration;
-}
-
-function getRanking(video) {
-  let ranking = 0;
-  for (const stat in video.statistics) {
-    if (video.statistics.hasOwnProperty(stat)) {
-      ranking += parseInt(video.statistics[stat], 10);
-    }
-  }
-  return ranking;
-}
-
-function getVideoData(video, id) {
+function parseUrl(inputUrl) {
+  const params = qs.parse(urlParser.parse(inputUrl).query);
   return {
-    id,
-    title: video.snippet.title,
-    description: video.snippet.description,
-    thumbnails: video.snippet.thumbnails.medium,
-    channel: video.snippet.channelTitle,
-    channelId: video.snippet.channelId,
-    tags: video.snippet.tags,
-    ranking: getRanking(video),
-    duration: getDuration(video),
-    year: getYear(video),
+    ...(params.list ? { playlistId: params.list } : {}),
+    ...(params.v ? { videoId: params.v } : {}),
   };
 }
 
-export function getChannelID(channelName) {
-  return ytAPIReq('channels', {
-    params: { forUsername: channelName, part: 'id' },
-  }).then(get('data.items[0].id'));
+async function getVideosFromUrl(inputUrl) {
+  const urlData = parseUrl(inputUrl);
+  if (urlData.playlistId) {
+    const videos = await getVideosFromPlaylist(urlData.playlistId);
+    return videos;
+  }
+
+  return [];
 }
 
-export function getChannelAvatar(channelId) {
-  return ytAPIReq('channels', {
-    params: { id: channelId, part: 'snippet' },
-  }).then(get('data.items[0].snippet.thumbnails.high.url'));
-}
-
-export function getPlaylistID(channelId) {
-  return ytAPIReq('channels', {
-    params: { id: channelId, part: 'contentDetails' },
-  }).then(get('data.items[0].contentDetails.relatedPlaylists.uploads'));
-}
-
-export async function getVideo(videoId) {
-  const { data: { items } } = await ytAPIReq('videos', {
+/**
+ * Call a Youtube API endpoint with GET parameters
+ *
+ * @param {String} endpoint The /endpoint to call
+ * @param {Object} params The parameters to pass
+ * @returns {Promise.<Object>} The data returned by the call
+ **/
+async function get(endpoint, params) {
+  const options = {
+    baseURL: 'https://www.googleapis.com/youtube/v3',
+    url: endpoint,
     params: {
-      id: videoId,
-      part: 'snippet,contentDetails,statistics',
+      key: YOUTUBE_API_KEY,
+      ...params,
     },
-  });
+  };
 
-  // Skip video that returns with no attributes such as private videos
-  if (items[0]) {
-    return getVideoData(items[0], items[0].id);
-  } else {
-    return false;
+  try {
+    const results = await axios(options);
+    return results.data;
+  } catch (err) {
+    return errorHandler(err);
   }
 }
 
-export async function recursiveGetVideosList(
-  channelId,
-  playlistId,
-  pageToken,
-  videos = []
-) {
-  const { data: { nextPageToken, items } } = await ytAPIReq('playlistItems', {
-    params: {
-      channelId,
+/**
+ * Returns a list of all videos from a specific playlist
+ *
+ * @param {String} playlistId The id of the playlist
+ * @returns {Promise.<Object>} A list of all videos in a playlist
+ *
+ * It can only get up to 50 videos per page in one call. It will browse all
+ * pages to get all videos.
+ **/
+async function getVideosFromPlaylist(playlistId) {
+  const resultsPerPage = 5;
+
+  let pageToken = null;
+  let videos = [];
+  do {
+    // Get list of all videos in the playlist
+    const pageItems = await get('playlistItems', {
       playlistId,
+      maxResults: resultsPerPage,
       pageToken,
-      order: 'date',
-      part: 'snippet',
-      maxResults: 50,
-    },
+      part: 'snippet,contentDetails',
+    });
+
+    let pageVideos = pageItems.items.map(video => ({
+      videoId: video.contentDetails.videoId,
+      playlistId: video.snippet.playlistId,
+      positionInPlaylist: video.snippet.position,
+    }));
+
+    // Grab more informations about each video and add it to the existing list
+    const videoData = await getVideoData(_.map(pageVideos, 'videoId'));
+    pageVideos = pageVideos.map(video => ({
+      ...video,
+      ..._.find(videoData, { videoId: video.videoId }),
+    }));
+
+    // Update the generic list
+    videos = videos.concat(pageVideos);
+
+    pageToken = pageItems.nextPageToken;
+  } while (pageToken);
+
+  return videos;
+}
+
+/**
+ * Returns details about specific videos
+ *
+ * @param {String|Array.<String>} userVideoId The id (or array of ids) of the
+ * video to get data from
+ * @returns {Promise.<Object>} A list of all videos in a playlist
+ **/
+async function getVideoData(userVideoId) {
+  const parts = ['contentDetails', 'snippet', 'statistics', 'status'].join(',');
+  // Allow for either one or several ids
+  let videoIds = userVideoId;
+  const onlyOneVideoId = !_.isArray(videoIds);
+  if (onlyOneVideoId) {
+    videoIds = [videoIds];
+  }
+  videoIds = videoIds.join(',');
+
+  const response = await get('videos', {
+    id: videoIds,
+    part: parts,
   });
 
-  const computedVideos = [];
-  for (const playlistItem of items) {
-    // We need to call /videos for each videos
-    // because we can't get statistics directly on /playlistItems
-    computedVideos.push(
-      await getVideo(playlistItem.snippet.resourceId.videoId)
-    );
-  }
+  const videoData = response.items.map(data => {
+    const hasCaptions = data.contentDetails.caption === 'true';
+    const viewCount = _.parseInt(data.statistics.viewCount);
+    const likeCount = _.parseInt(data.statistics.likeCount);
+    const dislikeCount = _.parseInt(data.statistics.dislikeCount);
+    const favoriteCount = _.parseInt(data.statistics.favoriteCount);
+    const commentCount = _.parseInt(data.statistics.commentCount);
 
-  return nextPageToken
-    ? recursiveGetVideosList(
-        channelId,
-        playlistId,
-        nextPageToken,
-        videos.concat(computedVideos)
-      )
-    : videos.concat(computedVideos);
+    return {
+      videoId: data.id,
+      publishedDate: data.snippet.publishedAt,
+      channelId: data.snippet.channelId,
+      channelTitle: data.snippet.channelTitle,
+      title: data.snippet.title,
+      description: data.snippet.description,
+      thumbnails: data.snippet.thumbnails,
+
+      defaultLanguage: data.snippet.defaultAudioLanguage,
+      hasCaptions,
+      licenseType: data.status.license,
+      isEmbeddable: data.status.embeddable,
+
+      ranking: {
+        views: viewCount,
+        likes: likeCount,
+        dislikes: dislikeCount,
+        favorites: favoriteCount,
+        comments: commentCount,
+      },
+    };
+  });
+
+  // Return only data if only one id passed initially
+  if (onlyOneVideoId) {
+    return videoData[0];
+  }
+  return videoData;
 }
+
+function errorHandler(response) {
+  /* eslint-disable no-console */
+  console.error(response.response.data.error);
+  /* eslint-enable no-console */
+  return undefined;
+}
+
+export { getVideosFromUrl, getVideosFromPlaylist, getVideoData };
+export default { getVideosFromUrl, getVideosFromPlaylist, getVideoData };
