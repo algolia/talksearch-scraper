@@ -6,7 +6,6 @@ const writeFile = Promise.promisify(fs.writeFile);
 
 async function writeToCache(path, data) {
   const content = stringify(data, { space: 2 });
-  console.info(content);
   const writing = await writeFile(`./cache/${path}`, content);
   return writing;
 }

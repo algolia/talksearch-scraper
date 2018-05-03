@@ -1,25 +1,22 @@
 import axios from 'axios';
+import dayjs from 'dayjs';
 import urlParser from 'url';
 import qs from 'query-string';
 import _ from 'lodash';
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 
-function parseUrl(inputUrl) {
-  const params = qs.parse(urlParser.parse(inputUrl).query);
+/**
+ * Returns an object containing the potential videoId, playlistId and channelId
+ *
+ * @param {String} url The url to parse
+ * @returns {Object} Object representing the url
+ **/
+function parseUrl(url) {
+  const params = qs.parse(urlParser.parse(url).query);
   return {
     ...(params.list ? { playlistId: params.list } : {}),
     ...(params.v ? { videoId: params.v } : {}),
   };
-}
-
-async function getVideosFromUrl(inputUrl) {
-  const urlData = parseUrl(inputUrl);
-  if (urlData.playlistId) {
-    const videos = await getVideosFromPlaylist(urlData.playlistId);
-    return videos;
-  }
-
-  return [];
 }
 
 /**
@@ -48,16 +45,55 @@ async function get(endpoint, params) {
 }
 
 /**
+ * Returns a list of videos from a Youtube url.
+ * Correctly dispatch to channel or playlist
+ *
+ * @param {String} url The url to follow
+ * @returns {Promise.<Object>} The list of video
+ **/
+async function getVideosFromUrl(url) {
+  const urlData = parseUrl(url);
+  if (urlData.playlistId) {
+    const videos = await getVideosFromPlaylist(urlData.playlistId);
+    return videos;
+  }
+
+  return [];
+}
+
+/**
+ * Return details about a specific playlist
+ *
+ * @param {String} playlistId The playlist id
+ * @returns {Promise.<Object>} The playlist data
+ **/
+async function getPlaylistData(playlistId) {
+  const response = await get('playlists', {
+    id: playlistId,
+    part: 'snippet',
+  });
+
+  const playlistData = response.items[0];
+  return {
+    id: playlistId,
+    title: playlistData.snippet.title,
+    description: playlistData.snippet.description,
+  };
+}
+
+/**
  * Returns a list of all videos from a specific playlist
  *
  * @param {String} playlistId The id of the playlist
- * @returns {Promise.<Object>} A list of all videos in a playlist
+ * @returns {Promise.<Array>} A list of all videos in a playlist
  *
  * It can only get up to 50 videos per page in one call. It will browse all
  * pages to get all videos.
  **/
 async function getVideosFromPlaylist(playlistId) {
-  const resultsPerPage = 5;
+  const resultsPerPage = 50;
+
+  const playlistData = await getPlaylistData(playlistId);
 
   let pageToken = null;
   let videos = [];
@@ -72,8 +108,8 @@ async function getVideosFromPlaylist(playlistId) {
 
     let pageVideos = pageItems.items.map(video => ({
       videoId: video.contentDetails.videoId,
-      playlistId: video.snippet.playlistId,
       positionInPlaylist: video.snippet.position,
+      playlist: playlistData,
     }));
 
     // Grab more informations about each video and add it to the existing list
@@ -116,6 +152,7 @@ async function getVideoData(userVideoId) {
 
   const videoData = response.items.map(data => {
     const hasCaptions = data.contentDetails.caption === 'true';
+    const publishedDate = dayjs(data.snippet.publishedAt).unix();
     const viewCount = _.parseInt(data.statistics.viewCount);
     const likeCount = _.parseInt(data.statistics.likeCount);
     const dislikeCount = _.parseInt(data.statistics.dislikeCount);
@@ -124,12 +161,14 @@ async function getVideoData(userVideoId) {
 
     return {
       videoId: data.id,
-      publishedDate: data.snippet.publishedAt,
-      channelId: data.snippet.channelId,
-      channelTitle: data.snippet.channelTitle,
+      publishedDate,
       title: data.snippet.title,
       description: data.snippet.description,
       thumbnails: data.snippet.thumbnails,
+      channel: {
+        id: data.snippet.channelId,
+        title: data.snippet.channelTitle,
+      },
 
       defaultLanguage: data.snippet.defaultAudioLanguage,
       hasCaptions,
