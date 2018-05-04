@@ -1,3 +1,6 @@
 module.exports = {
-  extends: ['algolia']
+  extends: ['algolia'],
+  rules: {
+    'no-console': 0
+  }
 };

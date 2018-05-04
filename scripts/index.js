@@ -20,6 +20,6 @@ const toCache = argv.toCache;
 (async () => {
   const videos = await youtube.getVideosFromUrl(url);
   if (toCache) {
-    await algolia.writeToCache('./test.json', videos);
+    await algolia.writeToCache(videos);
   }
 })();

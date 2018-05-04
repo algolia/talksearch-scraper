@@ -1,9 +1,21 @@
+import Promise from 'bluebird';
 import axios from 'axios';
 import dayjs from 'dayjs';
-import urlParser from 'url';
+import cheerio from 'cheerio';
 import qs from 'query-string';
+import urlParser from 'url';
+import termcolor from 'termcolor';
 import _ from 'lodash';
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
+
+// Define specific logging colors to better follow what's going on
+termcolor.define();
+console.playlist = function(playlistId, text) {
+  console.info(termcolor.yellow(`[${playlistId}]`), text);
+};
+console.video = function(videoId, text) {
+  console.info(termcolor.green(`[${videoId}]`), text);
+};
 
 /**
  * Returns an object containing the potential videoId, playlistId and channelId
@@ -53,8 +65,9 @@ async function get(endpoint, params) {
  **/
 async function getVideosFromUrl(url) {
   const urlData = parseUrl(url);
-  if (urlData.playlistId) {
-    const videos = await getVideosFromPlaylist(urlData.playlistId);
+  const playlistId = urlData.playlistId;
+  if (playlistId) {
+    const videos = await getVideosFromPlaylist(playlistId);
     return videos;
   }
 
@@ -94,6 +107,7 @@ async function getVideosFromPlaylist(playlistId) {
   const resultsPerPage = 50;
 
   const playlistData = await getPlaylistData(playlistId);
+  console.playlist(playlistId, `Title: ${playlistData.title}`);
 
   let pageToken = null;
   let videos = [];
@@ -105,6 +119,7 @@ async function getVideosFromPlaylist(playlistId) {
       pageToken,
       part: 'snippet,contentDetails',
     });
+    console.playlist(playlistId, `Videos found: ${pageItems.items.length}`);
 
     let pageVideos = pageItems.items.map(video => ({
       videoId: video.contentDetails.videoId,
@@ -114,10 +129,14 @@ async function getVideosFromPlaylist(playlistId) {
 
     // Grab more informations about each video and add it to the existing list
     const videoData = await getVideoData(_.map(pageVideos, 'videoId'));
-    pageVideos = pageVideos.map(video => ({
-      ...video,
-      ..._.find(videoData, { videoId: video.videoId }),
-    }));
+    pageVideos = pageVideos.map(video => {
+      const updatedVideo = {
+        ...video,
+        ..._.find(videoData, { videoId: video.videoId }),
+      };
+
+      return updatedVideo;
+    });
 
     // Update the generic list
     videos = videos.concat(pageVideos);
@@ -150,7 +169,9 @@ async function getVideoData(userVideoId) {
     part: parts,
   });
 
-  const videoData = response.items.map(data => {
+  const videoData = Promise.map(response.items, async data => {
+    const videoId = data.id;
+    const videoTitle = data.snippet.title;
     const hasCaptions = data.contentDetails.caption === 'true';
     const publishedDate = dayjs(data.snippet.publishedAt).unix();
     const viewCount = _.parseInt(data.statistics.viewCount);
@@ -159,16 +180,22 @@ async function getVideoData(userVideoId) {
     const favoriteCount = _.parseInt(data.statistics.favoriteCount);
     const commentCount = _.parseInt(data.statistics.commentCount);
 
+    console.video(videoId, `Title: ${videoTitle}`);
+
+    const captions = await getCaptions(videoId);
+    console.video(videoId, `Captions found: ${captions.length}`);
+
     return {
-      videoId: data.id,
+      videoId,
       publishedDate,
-      title: data.snippet.title,
+      title: videoTitle,
       description: data.snippet.description,
       thumbnails: data.snippet.thumbnails,
       channel: {
         id: data.snippet.channelId,
         title: data.snippet.channelTitle,
       },
+      captions,
 
       defaultLanguage: data.snippet.defaultAudioLanguage,
       hasCaptions,
@@ -192,8 +219,72 @@ async function getVideoData(userVideoId) {
   return videoData;
 }
 
+/**
+ * Get raw information about a YouTube video.
+ *
+ * @param {String} videoId Id of the video
+ * @returns {Object} Raw data about the video
+ *
+ * Note: This call does not use the API,but a rather obscure, undocumented,
+ * endpoint. The data returned itself is in a variety of formats that has to be
+ * parsed to make a cohesive object.
+ **/
+async function getRawVideoInfo(videoId) {
+  /* eslint-disable camelcase */
+  const options = {
+    url: 'http://www.youtube.com/get_video_info',
+    params: {
+      video_id: videoId,
+    },
+  };
+
+  try {
+    const results = await axios(options);
+    const params = qs.parse(results.data);
+    params.adaptive_fmts = qs.parse(params.adaptive_fmts);
+    params.atc = qs.parse(params.atc);
+    params.fflags = qs.parse(params.fflags);
+    params.player_response = JSON.parse(params.player_response);
+    params.url_encoded_fmt_stream_map = qs.parse(
+      params.url_encoded_fmt_stream_map
+    );
+    console.video(videoId, `✔ Getting raw data`);
+    return params;
+  } catch (err) {
+    console.video(videoId, `✘ Failed to get raw data`);
+    return errorHandler(err);
+  }
+  /* eslint-enable camelcase */
+}
+
+async function getCaptions(videoId) {
+  const rawData = await getRawVideoInfo(videoId);
+  const captionList =
+    rawData.player_response.captions.playerCaptionsTracklistRenderer
+      .captionTracks;
+  const captionUrl = _.find(captionList, { languageCode: 'en' }).baseUrl;
+  console.video(videoId, `Caption url: ${captionUrl}`);
+
+  const xml = await axios.get(captionUrl);
+  const $ = cheerio.load(xml.data, { xmlMode: true });
+  const texts = $('text');
+  const captions = _.map(texts, node => {
+    const $node = $(node);
+    const content = cheerio.load($node.text()).text();
+    const start = $node.attr('start');
+    const duration = $node.attr('dur');
+    return {
+      content,
+      start,
+      duration,
+    };
+  });
+  return captions;
+}
+
 function errorHandler(response) {
   /* eslint-disable no-console */
+  console.info(response);
   console.error(response.response.data.error);
   /* eslint-enable no-console */
   return undefined;
