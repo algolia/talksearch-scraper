@@ -2,20 +2,13 @@ import Promise from 'bluebird';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import cheerio from 'cheerio';
+import EventEmitter from 'events';
 import qs from 'query-string';
 import urlParser from 'url';
-import termcolor from 'termcolor';
 import _ from 'lodash';
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 
-// Define specific logging colors to better follow what's going on
-termcolor.define();
-console.playlist = function(playlistId, text) {
-  console.info(termcolor.yellow(`[${playlistId}]`), text);
-};
-console.video = function(videoId, text) {
-  console.info(termcolor.green(`[${videoId}]`), text);
-};
+const pulse = new EventEmitter();
 
 /**
  * Returns an object containing the potential videoId, playlistId and channelId
@@ -104,10 +97,10 @@ async function getPlaylistData(playlistId) {
  * pages to get all videos.
  **/
 async function getVideosFromPlaylist(playlistId) {
+  pulse.emit('playlist:get:start', playlistId);
   const resultsPerPage = 50;
 
   const playlistData = await getPlaylistData(playlistId);
-  console.playlist(playlistId, `Title: ${playlistData.title}`);
 
   let pageToken = null;
   let videos = [];
@@ -119,7 +112,10 @@ async function getVideosFromPlaylist(playlistId) {
       pageToken,
       part: 'snippet,contentDetails',
     });
-    console.playlist(playlistId, `Videos found: ${pageItems.items.length}`);
+    pulse.emit('playlist:get:page', playlistId, {
+      max: pageItems.pageInfo.totalResults,
+      increment: pageItems.items.length,
+    });
 
     let pageVideos = pageItems.items.map(video => ({
       videoId: video.contentDetails.videoId,
@@ -144,6 +140,8 @@ async function getVideosFromPlaylist(playlistId) {
     pageToken = pageItems.nextPageToken;
   } while (pageToken);
 
+  pulse.emit('playlist:get:end', playlistId, videos);
+
   return videos;
 }
 
@@ -162,14 +160,16 @@ async function getVideoData(userVideoId) {
   if (onlyOneVideoId) {
     videoIds = [videoIds];
   }
-  videoIds = videoIds.join(',');
 
+  videoIds.forEach(videoId => {
+    pulse.emit('video:data:start', videoId);
+  });
   const response = await get('videos', {
-    id: videoIds,
+    id: videoIds.join(','),
     part: parts,
   });
 
-  const videoData = Promise.map(response.items, async data => {
+  const videoData = await Promise.map(response.items, async data => {
     const videoId = data.id;
     const videoTitle = data.snippet.title;
     const hasCaptions = data.contentDetails.caption === 'true';
@@ -180,10 +180,7 @@ async function getVideoData(userVideoId) {
     const favoriteCount = _.parseInt(data.statistics.favoriteCount);
     const commentCount = _.parseInt(data.statistics.commentCount);
 
-    console.video(videoId, `Title: ${videoTitle}`);
-
     const captions = await getCaptions(videoId);
-    console.video(videoId, `Captions found: ${captions.length}`);
 
     return {
       videoId,
@@ -212,6 +209,10 @@ async function getVideoData(userVideoId) {
     };
   });
 
+  videoIds.forEach((videoId, index) => {
+    pulse.emit('video:data:end', videoId, videoData[index]);
+  });
+
   // Return only data if only one id passed initially
   if (onlyOneVideoId) {
     return videoData[0];
@@ -230,6 +231,7 @@ async function getVideoData(userVideoId) {
  * parsed to make a cohesive object.
  **/
 async function getRawVideoInfo(videoId) {
+  pulse.emit('video:raw:start', videoId);
   /* eslint-disable camelcase */
   const options = {
     url: 'http://www.youtube.com/get_video_info',
@@ -248,10 +250,9 @@ async function getRawVideoInfo(videoId) {
     params.url_encoded_fmt_stream_map = qs.parse(
       params.url_encoded_fmt_stream_map
     );
-    console.video(videoId, `✔ Getting raw data`);
+    pulse.emit('video:raw:end', params);
     return params;
   } catch (err) {
-    console.video(videoId, `✘ Failed to get raw data`);
     return errorHandler(err);
   }
   /* eslint-enable camelcase */
@@ -263,8 +264,8 @@ async function getCaptions(videoId) {
     rawData.player_response.captions.playerCaptionsTracklistRenderer
       .captionTracks;
   const captionUrl = _.find(captionList, { languageCode: 'en' }).baseUrl;
-  console.video(videoId, `Caption url: ${captionUrl}`);
 
+  pulse.emit('video:captions:start', videoId);
   const xml = await axios.get(captionUrl);
   const $ = cheerio.load(xml.data, { xmlMode: true });
   const texts = $('text');
@@ -279,6 +280,8 @@ async function getCaptions(videoId) {
       duration,
     };
   });
+
+  pulse.emit('video:captions:end', videoId, captions);
   return captions;
 }
 
@@ -290,5 +293,11 @@ function errorHandler(response) {
   return undefined;
 }
 
-export { getVideosFromUrl, getVideosFromPlaylist, getVideoData };
-export default { getVideosFromUrl, getVideosFromPlaylist, getVideoData };
+const Youtube = {
+  getVideosFromUrl,
+  on(eventName, callback) {
+    pulse.on(eventName, callback);
+  },
+};
+
+export default Youtube;
