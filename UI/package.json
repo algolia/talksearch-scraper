@@ -33,7 +33,7 @@
     "postcss-loader": "2.0.9",
     "rimraf": "2.6.2",
     "semver": "5.4.1",
-    "shelljs": "0.7.8",
+    "shelljs": "0.8.2",
     "uglifyjs-webpack-plugin": "1.1.4",
     "url-loader": "0.5.9",
     "vue": "2.5.13",
