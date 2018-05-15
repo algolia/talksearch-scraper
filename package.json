@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "test": "./scripts/test",
     "index": "babel-node ./scripts/index.js"
   },
   "repository": {
@@ -32,6 +33,7 @@
     "dotenv": "4.0.0",
     "express": "4.16.2",
     "http-auth": "3.2.3",
+    "jest": "^22.4.3",
     "json-stable-stringify": "^1.0.1",
     "lodash": "4.17.4",
     "mkdirp": "^0.5.1",
