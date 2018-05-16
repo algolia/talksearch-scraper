@@ -1,10 +1,4 @@
-import stringify from 'json-stable-stringify';
-import fs from 'fs';
-import mkdirpCallback from 'mkdirp';
-import Promise from 'bluebird';
-
-const writeFile = Promise.promisify(fs.writeFile);
-const mkdirp = Promise.promisify(mkdirpCallback);
+import fileutils from './fileutils';
 
 async function writeToCache(data) {
   const channelId = data[0].channel.id;
@@ -12,9 +6,7 @@ async function writeToCache(data) {
   const dirname = `./cache/${channelId}`;
   const path = `${dirname}/${playlistId}.json`;
 
-  await mkdirp(dirname);
-  const content = stringify(data, { space: 2 });
-  const writing = await writeFile(path, content);
+  const writing = await fileutils.writeJSON(path, data);
   return writing;
 }
 

@@ -5,10 +5,12 @@ import cheerio from 'cheerio';
 import EventEmitter from 'events';
 import qs from 'query-string';
 import urlParser from 'url';
+import fileutils from './fileutils';
 import _ from 'lodash';
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
-
 const pulse = new EventEmitter();
+
+let logCalls = false;
 
 /**
  * Returns an object containing the potential videoId, playlistId and channelId
@@ -49,14 +51,30 @@ async function get(endpoint, params) {
   }
 }
 
+async function logCall(destination, content) {
+  if (!logCalls) {
+    return false;
+  }
+
+  const writeMethod = _.isObject(content)
+    ? fileutils.writeJSON
+    : fileutils.write;
+  const writing = await writeMethod(`./logs/${destination}`, content);
+  return writing;
+}
+
 /**
  * Returns a list of videos from a Youtube url.
  * Correctly dispatch to channel or playlist
  *
  * @param {String} url The url to follow
+ * @param {Object} options Options
+ *  - logCalls {Boolean} If set to true, http calls results will be saved on disk
  * @returns {Promise.<Object>} The list of video
  **/
-async function getVideosFromUrl(url) {
+async function getVideosFromUrl(url, options) {
+  logCalls = options.logCalls;
+
   const urlData = parseUrl(url);
   const playlistId = urlData.playlistId;
   if (playlistId) {
@@ -78,6 +96,7 @@ async function getPlaylistData(playlistId) {
     id: playlistId,
     part: 'snippet',
   });
+  logCall(`playlists/${playlistId}.json`, response);
 
   const playlistData = response.items[0];
   return {
@@ -104,6 +123,7 @@ async function getVideosFromPlaylist(playlistId) {
 
   let pageToken = null;
   let videos = [];
+  let page = 1;
   do {
     // Get list of all videos in the playlist
     const pageItems = await get('playlistItems', {
@@ -112,6 +132,8 @@ async function getVideosFromPlaylist(playlistId) {
       pageToken,
       part: 'snippet,contentDetails',
     });
+    logCall(`playlistItems/${playlistId}-page-${page}.json`, pageItems);
+
     pulse.emit('playlist:get:page', playlistId, {
       max: pageItems.pageInfo.totalResults,
       increment: pageItems.items.length,
@@ -138,6 +160,7 @@ async function getVideosFromPlaylist(playlistId) {
     videos = videos.concat(pageVideos);
 
     pageToken = pageItems.nextPageToken;
+    page++;
   } while (pageToken);
 
   pulse.emit('playlist:get:end', playlistId, videos);
@@ -168,6 +191,7 @@ async function getVideoData(userVideoId) {
     id: videoIds.join(','),
     part: parts,
   });
+  logCall(`videos/${_.first(videoIds)}-to-${_.last(videoIds)}.json`, response);
 
   const videoData = await Promise.map(response.items, async data => {
     const videoId = data.id;
@@ -180,7 +204,13 @@ async function getVideoData(userVideoId) {
     const favoriteCount = _.parseInt(data.statistics.favoriteCount);
     const commentCount = _.parseInt(data.statistics.commentCount);
 
-    const captions = await getCaptions(videoId);
+    let captions;
+    try {
+      captions = await getCaptions(videoId);
+    } catch (err) {
+      pulse.emit('video:error', videoId, 'No captions found');
+      return {};
+    }
 
     return {
       videoId,
@@ -242,6 +272,8 @@ async function getRawVideoInfo(videoId) {
 
   try {
     const results = await axios(options);
+    logCall(`get_video_info/${videoId}.txt`, results.data);
+
     const params = qs.parse(results.data);
     params.adaptive_fmts = qs.parse(params.adaptive_fmts);
     params.atc = qs.parse(params.atc);
@@ -260,13 +292,16 @@ async function getRawVideoInfo(videoId) {
 
 async function getCaptions(videoId) {
   const rawData = await getRawVideoInfo(videoId);
-  const captionList =
-    rawData.player_response.captions.playerCaptionsTracklistRenderer
-      .captionTracks;
+  const captionList = _.get(
+    rawData,
+    'player_response.captions.playerCaptionsTracklistRenderer.captionTracks'
+  );
   const captionUrl = _.find(captionList, { languageCode: 'en' }).baseUrl;
 
   pulse.emit('video:captions:start', videoId);
   const xml = await axios.get(captionUrl);
+  logCall(`captions/${videoId}.xml`, xml.data);
+
   const $ = cheerio.load(xml.data, { xmlMode: true });
   const texts = $('text');
   const captions = _.map(texts, node => {
