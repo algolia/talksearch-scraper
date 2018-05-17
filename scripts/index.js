@@ -1,4 +1,4 @@
-import algolia from '../src/algolia';
+import fileutils from '../src/fileutils';
 import youtube from '../src/youtube';
 import progress from '../src/progress';
 import yargs from 'yargs';
@@ -22,7 +22,11 @@ const argv = yargs
   .command('$0 <url> [options]', 'Index the videos of the specified url')
   .options({
     'to-cache': {
-      describe: 'Save records to disk instead of pushing to Algolia',
+      describe: 'Save API data to disk instead of pushing to Algolia',
+      default: false,
+    },
+    'from-cache': {
+      describe: 'Push records from cache instead of requesting API',
       default: false,
     },
     'log-calls': {
@@ -35,12 +39,15 @@ const argv = yargs
 
 const url = argv.url;
 const toCache = argv.toCache;
+const fromCache = argv.fromCache;
 const logCalls = argv.logCalls;
 
 (async () => {
-  const videos = await youtube.getVideosFromUrl(url, { logCalls });
+  youtube.init({ logCalls, fromCache });
+  const videos = await youtube.getVideosFromUrl(url);
   if (toCache) {
-    await algolia.writeToCache(videos);
+    const playlistId = videos[0].playlist.id;
+    await fileutils.writeJSON(`./cache/${playlistId}.json`, videos);
   }
   progress.displayErrors();
 })();

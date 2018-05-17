@@ -5,62 +5,13 @@ import cheerio from 'cheerio';
 import EventEmitter from 'events';
 import qs from 'query-string';
 import urlParser from 'url';
-import fileutils from './fileutils';
+import diskLogger from './disk-logger';
 import _ from 'lodash';
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 const pulse = new EventEmitter();
 
-let logCalls = false;
-
-/**
- * Returns an object containing the potential videoId, playlistId and channelId
- *
- * @param {String} url The url to parse
- * @returns {Object} Object representing the url
- **/
-function parseUrl(url) {
-  const params = qs.parse(urlParser.parse(url).query);
-  return {
-    ...(params.list ? { playlistId: params.list } : {}),
-    ...(params.v ? { videoId: params.v } : {}),
-  };
-}
-
-/**
- * Call a Youtube API endpoint with GET parameters
- *
- * @param {String} endpoint The /endpoint to call
- * @param {Object} params The parameters to pass
- * @returns {Promise.<Object>} The data returned by the call
- **/
-async function get(endpoint, params) {
-  try {
-    const options = {
-      baseURL: 'https://www.googleapis.com/youtube/v3',
-      url: endpoint,
-      params: {
-        key: YOUTUBE_API_KEY,
-        ...params,
-      },
-    };
-    const results = await axios(options);
-    return results.data;
-  } catch (err) {
-    pulse.emit('error', err, `get/${endpoint}/${JSON.stringify(params)}`);
-    return {};
-  }
-}
-
-async function logCall(destination, content) {
-  if (!logCalls) {
-    return false;
-  }
-
-  const writeMethod = _.isObject(content)
-    ? fileutils.writeJSON
-    : fileutils.write;
-  const writing = await writeMethod(`./logs/${destination}`, content);
-  return writing;
+function init(options) {
+  diskLogger.enabled = options.logCalls;
 }
 
 /**
@@ -72,10 +23,12 @@ async function logCall(destination, content) {
  *  - logCalls {Boolean} If set to true, http calls results will be saved on disk
  * @returns {Promise.<Object>} The list of video
  **/
-async function getVideosFromUrl(url, options) {
-  logCalls = options.logCalls;
-
-  const urlData = parseUrl(url);
+async function getVideosFromUrl(url) {
+  const params = qs.parse(urlParser.parse(url).query);
+  const urlData = {
+    ...(params.list ? { playlistId: params.list } : {}),
+    ...(params.v ? { videoId: params.v } : {}),
+  };
   const playlistId = urlData.playlistId;
   if (playlistId) {
     const videos = await getVideosFromPlaylist(playlistId);
@@ -83,32 +36,6 @@ async function getVideosFromUrl(url, options) {
   }
 
   return [];
-}
-
-/**
- * Return details about a specific playlist
- *
- * @param {String} playlistId The playlist id
- * @returns {Promise.<Object>} The playlist data
- **/
-async function getPlaylistData(playlistId) {
-  try {
-    const response = await get('playlists', {
-      id: playlistId,
-      part: 'snippet',
-    });
-    logCall(`playlists/${playlistId}.json`, response);
-
-    const playlistData = response.items[0];
-    return {
-      id: playlistId,
-      title: playlistData.snippet.title,
-      description: playlistData.snippet.description,
-    };
-  } catch (err) {
-    pulse.emit('error', err, `getPlaylistData(${playlistId})`);
-    return {};
-  }
 }
 
 /**
@@ -138,7 +65,7 @@ async function getVideosFromPlaylist(playlistId) {
         pageToken,
         part: 'snippet,contentDetails',
       });
-      logCall(`playlistItems/${playlistId}-page-${page}.json`, pageItems);
+      diskLogger.write(`playlistItems/${playlistId}-page-${page}.json`, pageItems);
 
       pulse.emit('playlist:get:page', playlistId, {
         max: pageItems.pageInfo.totalResults,
@@ -179,6 +106,32 @@ async function getVideosFromPlaylist(playlistId) {
 }
 
 /**
+ * Return details about a specific playlist
+ *
+ * @param {String} playlistId The playlist id
+ * @returns {Promise.<Object>} The playlist data
+ **/
+async function getPlaylistData(playlistId) {
+  try {
+    const response = await get('playlists', {
+      id: playlistId,
+      part: 'snippet',
+    });
+    diskLogger.write(`playlists/${playlistId}.json`, response);
+
+    const playlistData = response.items[0];
+    return {
+      id: playlistId,
+      title: playlistData.snippet.title,
+      description: playlistData.snippet.description,
+    };
+  } catch (err) {
+    pulse.emit('error', err, `getPlaylistData(${playlistId})`);
+    return {};
+  }
+}
+
+/**
  * Returns details about specific videos
  *
  * @param {String|Array.<String>} userVideoId The id (or array of ids) of the
@@ -204,7 +157,7 @@ async function getVideoData(userVideoId) {
       id: videoIds.join(','),
       part: parts,
     });
-    logCall(
+    diskLogger.write(
       `videos/${_.first(videoIds)}-to-${_.last(videoIds)}.json`,
       response
     );
@@ -213,8 +166,9 @@ async function getVideoData(userVideoId) {
       pulse.emit('video:data:basic', data.id, data);
 
       const videoId = data.id;
-      const videoTitle = data.snippet.title;
-      const hasCaptions = data.contentDetails.caption === 'true';
+      const captions = await getCaptions(videoId);
+      const hasCaptions = captions.length > 0;
+      const hasManualCaptions = data.contentDetails.caption === 'true';
       const publishedDate = dayjs(data.snippet.publishedAt).unix();
       const viewCount = _.parseInt(data.statistics.viewCount);
       const likeCount = _.parseInt(data.statistics.likeCount);
@@ -222,32 +176,29 @@ async function getVideoData(userVideoId) {
       const favoriteCount = _.parseInt(data.statistics.favoriteCount);
       const commentCount = _.parseInt(data.statistics.commentCount);
 
-      const captions = await getCaptions(videoId);
-
       return {
-        videoId,
-        publishedDate,
-        title: videoTitle,
-        description: data.snippet.description,
-        thumbnails: data.snippet.thumbnails,
         channel: {
           id: data.snippet.channelId,
           title: data.snippet.channelTitle,
         },
-        captions,
-
-        defaultLanguage: data.snippet.defaultAudioLanguage,
-        hasCaptions,
-        licenseType: data.status.license,
-        isEmbeddable: data.status.embeddable,
-
-        ranking: {
-          views: viewCount,
-          likes: likeCount,
-          dislikes: dislikeCount,
-          favorites: favoriteCount,
-          comments: commentCount,
+        video: {
+          id: videoId,
+          title: data.snippet.title,
+          description: data.snippet.description,
+          publishedDate,
+          thumbnails: data.snippet.thumbnails,
+          hasCaptions,
+          hasManualCaptions,
+          language: data.snippet.defaultAudioLanguage,
+          popularity: {
+            views: viewCount,
+            likes: likeCount,
+            dislikes: dislikeCount,
+            favorites: favoriteCount,
+            comments: commentCount,
+          },
         },
+        captions,
       };
     });
 
@@ -288,7 +239,7 @@ async function getRawVideoInfo(videoId) {
     };
 
     const results = await axios(options);
-    logCall(`get_video_info/${videoId}.txt`, results.data);
+    diskLogger.write(`get_video_info/${videoId}.txt`, results.data);
 
     const params = qs.parse(results.data);
     params.adaptive_fmts = qs.parse(params.adaptive_fmts);
@@ -299,7 +250,7 @@ async function getRawVideoInfo(videoId) {
       params.url_encoded_fmt_stream_map
     );
     pulse.emit('video:raw:end', params);
-    logCall(`get_video_info/${videoId}.json`, params);
+    diskLogger.write(`get_video_info/${videoId}.json`, params);
     return params;
   } catch (err) {
     pulse.emit('error', err, `getRawVideoInfo/${videoId}`);
@@ -308,6 +259,12 @@ async function getRawVideoInfo(videoId) {
   /* eslint-enable camelcase */
 }
 
+/**
+ * Get the caption url for a given videoId
+ *
+ * @param {String} videoId Id of the video
+ * @returns {String} Url to get the video caption file
+ **/
 async function getCaptionsUrl(videoId) {
   try {
     const rawData = await getRawVideoInfo(videoId);
@@ -322,6 +279,12 @@ async function getCaptionsUrl(videoId) {
   }
 }
 
+/**
+ * Get captions for a given videoId
+ *
+ * @param {String} videoId Id of the video
+ * @returns {Array} Array of captions
+ **/
 async function getCaptions(videoId) {
   try {
     const captionUrl = await getCaptionsUrl(videoId);
@@ -332,7 +295,7 @@ async function getCaptions(videoId) {
 
     pulse.emit('video:captions:start', videoId);
     const xml = await axios.get(captionUrl);
-    logCall(`captions/${videoId}.xml`, xml.data);
+    diskLogger.write(`captions/${videoId}.xml`, xml.data);
 
     const $ = cheerio.load(xml.data, { xmlMode: true });
     const texts = $('text');
@@ -360,8 +323,36 @@ async function getCaptions(videoId) {
   }
 }
 
+/**
+ * Call a Youtube API endpoint with GET parameters
+ *
+ * @param {String} endpoint The /endpoint to call
+ * @param {Object} params The parameters to pass
+ * @returns {Promise.<Object>} The data returned by the call
+ **/
+async function get(endpoint, params) {
+  try {
+    const options = {
+      baseURL: 'https://www.googleapis.com/youtube/v3',
+      url: endpoint,
+      params: {
+        key: YOUTUBE_API_KEY,
+        ...params,
+      },
+    };
+    const results = await axios(options);
+    return results.data;
+  } catch (err) {
+    pulse.emit('error', err, `get/${endpoint}/${JSON.stringify(params)}`);
+    return {};
+  }
+}
+
 const Youtube = {
+  // Public methods
+  init,
   getVideosFromUrl,
+  // Allow dispatching of events
   on(eventName, callback) {
     pulse.on(eventName, callback);
   },
