@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+# --no-watchman is needed otherwise Jest got confused as to which file changed
+# and run tests for the wrong files
+jest \
+  --watch \
+  --no-watchman \
+  ./src

@@ -187,7 +187,9 @@ async function getVideosFromPlaylist(playlistId) {
  **/
 async function getVideoData(userVideoId) {
   try {
-    const parts = ['contentDetails', 'snippet', 'statistics', 'status'].join(',');
+    const parts = ['contentDetails', 'snippet', 'statistics', 'status'].join(
+      ','
+    );
     // Allow for either one or several ids
     let videoIds = userVideoId;
     const onlyOneVideoId = !_.isArray(videoIds);
@@ -202,9 +204,14 @@ async function getVideoData(userVideoId) {
       id: videoIds.join(','),
       part: parts,
     });
-    logCall(`videos/${_.first(videoIds)}-to-${_.last(videoIds)}.json`, response);
+    logCall(
+      `videos/${_.first(videoIds)}-to-${_.last(videoIds)}.json`,
+      response
+    );
 
     const videoData = await Promise.map(response.items, async data => {
+      pulse.emit('video:data:basic', data.id, data);
+
       const videoId = data.id;
       const videoTitle = data.snippet.title;
       const hasCaptions = data.contentDetails.caption === 'true';
@@ -292,6 +299,7 @@ async function getRawVideoInfo(videoId) {
       params.url_encoded_fmt_stream_map
     );
     pulse.emit('video:raw:end', params);
+    logCall(`get_video_info/${videoId}.json`, params);
     return params;
   } catch (err) {
     pulse.emit('error', err, `getRawVideoInfo/${videoId}`);
@@ -307,16 +315,20 @@ async function getCaptionsUrl(videoId) {
       rawData,
       'player_response.captions.playerCaptionsTracklistRenderer.captionTracks'
     );
-    return _.find(captionList, { languageCode: 'en' }).baseUrl;
+    return _.get(_.find(captionList, { languageCode: 'en' }), 'baseUrl');
   } catch (err) {
     pulse.emit('error', err, `getCaptionsUrl(${videoId})`);
-    return '';
+    return false;
   }
 }
 
 async function getCaptions(videoId) {
   try {
     const captionUrl = await getCaptionsUrl(videoId);
+    if (!captionUrl) {
+      pulse.emit('video:error', videoId, 'No caption url');
+      return [];
+    }
 
     pulse.emit('video:captions:start', videoId);
     const xml = await axios.get(captionUrl);
@@ -342,7 +354,7 @@ async function getCaptions(videoId) {
     }
     return captions;
   } catch (err) {
-    pulse.emit('video:error', videoId, 'Unable to get captions');
+    pulse.emit('video:error', videoId, 'Error when getting captions');
     pulse.emit('error', err, `getCaptions(${videoId})`);
     return [];
   }
@@ -352,6 +364,11 @@ const Youtube = {
   getVideosFromUrl,
   on(eventName, callback) {
     pulse.on(eventName, callback);
+  },
+  // We expose those methods so we can test them. But we clearly mark them as
+  // being internals, and not part of the public API
+  internals: {
+    getCaptionsUrl,
   },
 };
 

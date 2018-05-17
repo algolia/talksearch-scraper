@@ -7,6 +7,7 @@ import yargs from 'yargs';
 youtube.on('playlist:get:page', progress.onPlaylistGetPage);
 youtube.on('playlist:get:end', progress.onPlaylistGetEnd);
 youtube.on('video:data:start', progress.onVideoDataStart);
+youtube.on('video:data:basic', progress.onVideoDataBasic);
 youtube.on('video:data:end', progress.onVideoDataEnd);
 youtube.on('video:captions:start', progress.onVideoCaptionsStart);
 youtube.on('video:raw:start', progress.onVideoRawStart);

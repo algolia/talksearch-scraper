@@ -6,6 +6,7 @@ const progressBars = new MultiProgressBar();
 let progressPlaylist = null;
 const progressVideos = {};
 const displayTokens = { captions: 0 };
+const displayTokensVideo = {};
 const errors = [];
 
 /**
@@ -31,22 +32,36 @@ function refreshPlaylist() {
  * Increment a video progressbar to the next step
  *
  * @param {String} videoId The unique ID of the video
- * @param {String} details The current step processed
+ * @param {String} newTokens The new tokens to display in the bar
  * @returns {void}
  **/
-function tickVideo(videoId, details) {
-  progressVideos[videoId].tick(1, { details });
+function tickVideo(videoId, newTokens) {
+  const tokens = {
+    ...displayTokensVideo[videoId],
+    ...newTokens,
+  };
+
+  progressVideos[videoId].tick(1, { ...tokens });
+
+  displayTokensVideo[videoId] = tokens;
 }
 
 /**
  * Refresh a video progressbar without going to the next step
  *
  * @param {String} videoId The unique ID of the video
- * @param {String} details The current step processed
+ * @param {String} newTokens The new tokens to display in the bar
  * @returns {void}
  **/
-function refreshVideo(videoId, details) {
-  progressVideos[videoId].tick(0, { details });
+function refreshVideo(videoId, newTokens) {
+  const tokens = {
+    ...displayTokensVideo[videoId],
+    ...newTokens,
+  };
+
+  progressVideos[videoId].tick(0, { ...tokens });
+
+  displayTokensVideo[videoId] = tokens;
 }
 
 /**
@@ -94,33 +109,44 @@ const Progress = {
   },
 
   onVideoDataStart(videoId) {
-    const name = chalk.green(videoId);
-    progressVideos[videoId] = progressBars.newBar(`[${name}] :bar :details`, {
+    const id = chalk.green(videoId);
+    progressVideos[videoId] = progressBars.newBar(`[${id}] :name :details`, {
       total: 2,
       width: 10,
       complete: chalk.green('.'),
       incomplete: chalk.grey('.'),
     });
-    tickVideo(videoId, 'Getting basic informations');
+    displayTokensVideo[videoId] = { name: '???' };
+    refreshVideo(videoId, {
+      details: chalk.white('Getting basic informations'),
+    });
+  },
+
+  onVideoDataBasic(videoId, data) {
+    refreshVideo(videoId, { name: chalk.blue(data.snippet.title) });
   },
 
   onVideoCaptionsStart(videoId) {
-    tickVideo(videoId, 'Getting captions');
+    refreshVideo(videoId, { details: chalk.white('Getting captions') });
   },
 
   onVideoRawStart(videoId) {
-    tickVideo(videoId, 'Getting raw data');
+    refreshVideo(videoId, { details: chalk.white('Getting raw data') });
   },
 
   onVideoDataEnd(videoId, data) {
-    // const captionsCount = data.captions.length;
-    // displayTokens.captions += captionsCount;
-    // refreshPlaylist();
-    // refreshVideo(videoId, `✔ Done (${captionsCount} captions)`);
+    const captionsCount = data.captions.length;
+    displayTokens.captions += captionsCount;
+    if (captionsCount > 0) {
+      refreshPlaylist();
+      refreshVideo(videoId, {
+        details: chalk.green(`✔ Done (${captionsCount} captions)`),
+      });
+    }
   },
 
   onVideoError(videoId, errorMessage) {
-    refreshVideo(videoId, chalk.red(`✘ ${errorMessage}`));
+    refreshVideo(videoId, { details: chalk.red(`✘ ${errorMessage}`) });
   },
 
   onError(error, title) {
