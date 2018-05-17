@@ -42,6 +42,7 @@
     "lodash": "4.17.4",
     "mkdirp": "^0.5.1",
     "multi-progress": "^2.0.0",
+    "parse-iso-duration": "^1.0.0",
     "query-string": "^6.1.0",
     "vuex": "3.0.1",
     "yargs": "^11.0.0",

@@ -44,10 +44,14 @@ const logCalls = argv.logCalls;
 
 (async () => {
   youtube.init({ logCalls, fromCache });
+  // Getting videos from Youtube
   const videos = await youtube.getVideosFromUrl(url);
+  progress.displayErrors();
+
+  // Writing to cache
   if (toCache) {
     const playlistId = videos[0].playlist.id;
     await fileutils.writeJSON(`./cache/${playlistId}.json`, videos);
+    return;
   }
-  progress.displayErrors();
 })();

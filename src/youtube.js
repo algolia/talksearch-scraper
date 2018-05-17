@@ -3,15 +3,19 @@ import axios from 'axios';
 import dayjs from 'dayjs';
 import cheerio from 'cheerio';
 import EventEmitter from 'events';
+import parseIsoDuration from 'parse-iso-duration';
 import qs from 'query-string';
 import urlParser from 'url';
 import diskLogger from './disk-logger';
+import fileutils from './fileutils';
 import _ from 'lodash';
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 const pulse = new EventEmitter();
 
+let readFromCache = false;
 function init(options) {
   diskLogger.enabled = options.logCalls;
+  readFromCache = options.fromCache;
 }
 
 /**
@@ -48,6 +52,11 @@ async function getVideosFromUrl(url) {
  * pages to get all videos.
  **/
 async function getVideosFromPlaylist(playlistId) {
+  // No need to call the API, we're reading it from cache
+  if (readFromCache) {
+    return fileutils.readJSON(`./cache/${playlistId}.json`);
+  }
+
   try {
     pulse.emit('playlist:get:start', playlistId);
     const resultsPerPage = 50;
@@ -65,32 +74,37 @@ async function getVideosFromPlaylist(playlistId) {
         pageToken,
         part: 'snippet,contentDetails',
       });
-      diskLogger.write(`playlistItems/${playlistId}-page-${page}.json`, pageItems);
 
+      diskLogger.write(
+        `playlistItems/${playlistId}-page-${page}.json`,
+        pageItems
+      );
       pulse.emit('playlist:get:page', playlistId, {
         max: pageItems.pageInfo.totalResults,
         increment: pageItems.items.length,
       });
 
-      let pageVideos = pageItems.items.map(video => ({
-        videoId: video.contentDetails.videoId,
-        positionInPlaylist: video.snippet.position,
+      // Base info about videos in playlist
+      const baseInfo = pageItems.items.map(video => ({
+        video: {
+          id: video.contentDetails.videoId,
+          positionInPlaylist: video.snippet.position,
+        },
         playlist: playlistData,
       }));
+      // Advanced info about each video
+      const advancedInfo = await getVideoData(_.map(baseInfo, 'video.id'));
 
-      // Grab more informations about each video and add it to the existing list
-      const videoData = await getVideoData(_.map(pageVideos, 'videoId'));
-      pageVideos = pageVideos.map(video => {
-        const updatedVideo = {
-          ...video,
-          ..._.find(videoData, { videoId: video.videoId }),
-        };
-
-        return updatedVideo;
-      });
+      // Merging the two
+      const newVideos = _.values(
+        _.merge(
+          _.keyBy(baseInfo, 'video.id'),
+          _.keyBy(advancedInfo, 'video.id')
+        )
+      );
 
       // Update the generic list
-      videos = videos.concat(pageVideos);
+      videos = videos.concat(newVideos);
 
       pageToken = pageItems.nextPageToken;
       page++;
@@ -117,7 +131,7 @@ async function getPlaylistData(playlistId) {
       id: playlistId,
       part: 'snippet',
     });
-    diskLogger.write(`playlists/${playlistId}.json`, response);
+    diskLogger.write(`playlist/${playlistId}.json`, response);
 
     const playlistData = response.items[0];
     return {
@@ -175,6 +189,12 @@ async function getVideoData(userVideoId) {
       const dislikeCount = _.parseInt(data.statistics.dislikeCount);
       const favoriteCount = _.parseInt(data.statistics.favoriteCount);
       const commentCount = _.parseInt(data.statistics.commentCount);
+      const durationInSeconds =
+        parseIsoDuration(data.contentDetails.duration) / 1000;
+      const duration = {
+        minutes: Math.floor(durationInSeconds / 60),
+        seconds: durationInSeconds % 60,
+      };
 
       return {
         channel: {
@@ -197,6 +217,7 @@ async function getVideoData(userVideoId) {
             favorites: favoriteCount,
             comments: commentCount,
           },
+          duration,
         },
         captions,
       };

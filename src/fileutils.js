@@ -5,6 +5,7 @@ import mkdirpCallback from 'mkdirp';
 import Promise from 'bluebird';
 
 const writeFile = Promise.promisify(fs.writeFile);
+const readFile = Promise.promisify(fs.readFile);
 const mkdirp = Promise.promisify(mkdirpCallback);
 
 async function write(destination, content) {
@@ -19,5 +20,15 @@ async function writeJSON(destination, data) {
   return writing;
 }
 
-export { write, writeJSON };
-export default { write, writeJSON };
+async function read(source) {
+  const writing = await readFile(source);
+  return writing;
+}
+
+async function readJSON(source) {
+  const content = await read(source);
+  return JSON.parse(content);
+}
+
+export { write, writeJSON, read, readJSON };
+export default { write, writeJSON, read, readJSON };
