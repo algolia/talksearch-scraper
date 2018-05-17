@@ -34,20 +34,20 @@ function parseUrl(url) {
  * @returns {Promise.<Object>} The data returned by the call
  **/
 async function get(endpoint, params) {
-  const options = {
-    baseURL: 'https://www.googleapis.com/youtube/v3',
-    url: endpoint,
-    params: {
-      key: YOUTUBE_API_KEY,
-      ...params,
-    },
-  };
-
   try {
+    const options = {
+      baseURL: 'https://www.googleapis.com/youtube/v3',
+      url: endpoint,
+      params: {
+        key: YOUTUBE_API_KEY,
+        ...params,
+      },
+    };
     const results = await axios(options);
     return results.data;
   } catch (err) {
-    return errorHandler(err);
+    pulse.emit('error', err, `get/${endpoint}/${JSON.stringify(params)}`);
+    return {};
   }
 }
 
@@ -92,18 +92,23 @@ async function getVideosFromUrl(url, options) {
  * @returns {Promise.<Object>} The playlist data
  **/
 async function getPlaylistData(playlistId) {
-  const response = await get('playlists', {
-    id: playlistId,
-    part: 'snippet',
-  });
-  logCall(`playlists/${playlistId}.json`, response);
+  try {
+    const response = await get('playlists', {
+      id: playlistId,
+      part: 'snippet',
+    });
+    logCall(`playlists/${playlistId}.json`, response);
 
-  const playlistData = response.items[0];
-  return {
-    id: playlistId,
-    title: playlistData.snippet.title,
-    description: playlistData.snippet.description,
-  };
+    const playlistData = response.items[0];
+    return {
+      id: playlistId,
+      title: playlistData.snippet.title,
+      description: playlistData.snippet.description,
+    };
+  } catch (err) {
+    pulse.emit('error', err, `getPlaylistData(${playlistId})`);
+    return {};
+  }
 }
 
 /**
@@ -116,56 +121,61 @@ async function getPlaylistData(playlistId) {
  * pages to get all videos.
  **/
 async function getVideosFromPlaylist(playlistId) {
-  pulse.emit('playlist:get:start', playlistId);
-  const resultsPerPage = 50;
+  try {
+    pulse.emit('playlist:get:start', playlistId);
+    const resultsPerPage = 50;
 
-  const playlistData = await getPlaylistData(playlistId);
+    const playlistData = await getPlaylistData(playlistId);
 
-  let pageToken = null;
-  let videos = [];
-  let page = 1;
-  do {
-    // Get list of all videos in the playlist
-    const pageItems = await get('playlistItems', {
-      playlistId,
-      maxResults: resultsPerPage,
-      pageToken,
-      part: 'snippet,contentDetails',
-    });
-    logCall(`playlistItems/${playlistId}-page-${page}.json`, pageItems);
+    let pageToken = null;
+    let videos = [];
+    let page = 1;
+    do {
+      // Get list of all videos in the playlist
+      const pageItems = await get('playlistItems', {
+        playlistId,
+        maxResults: resultsPerPage,
+        pageToken,
+        part: 'snippet,contentDetails',
+      });
+      logCall(`playlistItems/${playlistId}-page-${page}.json`, pageItems);
 
-    pulse.emit('playlist:get:page', playlistId, {
-      max: pageItems.pageInfo.totalResults,
-      increment: pageItems.items.length,
-    });
+      pulse.emit('playlist:get:page', playlistId, {
+        max: pageItems.pageInfo.totalResults,
+        increment: pageItems.items.length,
+      });
 
-    let pageVideos = pageItems.items.map(video => ({
-      videoId: video.contentDetails.videoId,
-      positionInPlaylist: video.snippet.position,
-      playlist: playlistData,
-    }));
+      let pageVideos = pageItems.items.map(video => ({
+        videoId: video.contentDetails.videoId,
+        positionInPlaylist: video.snippet.position,
+        playlist: playlistData,
+      }));
 
-    // Grab more informations about each video and add it to the existing list
-    const videoData = await getVideoData(_.map(pageVideos, 'videoId'));
-    pageVideos = pageVideos.map(video => {
-      const updatedVideo = {
-        ...video,
-        ..._.find(videoData, { videoId: video.videoId }),
-      };
+      // Grab more informations about each video and add it to the existing list
+      const videoData = await getVideoData(_.map(pageVideos, 'videoId'));
+      pageVideos = pageVideos.map(video => {
+        const updatedVideo = {
+          ...video,
+          ..._.find(videoData, { videoId: video.videoId }),
+        };
 
-      return updatedVideo;
-    });
+        return updatedVideo;
+      });
 
-    // Update the generic list
-    videos = videos.concat(pageVideos);
+      // Update the generic list
+      videos = videos.concat(pageVideos);
 
-    pageToken = pageItems.nextPageToken;
-    page++;
-  } while (pageToken);
+      pageToken = pageItems.nextPageToken;
+      page++;
+    } while (pageToken);
 
-  pulse.emit('playlist:get:end', playlistId, videos);
+    pulse.emit('playlist:get:end', playlistId, videos);
 
-  return videos;
+    return videos;
+  } catch (err) {
+    pulse.emit('error', err, `getVideosFromPlaylist(${playlistId})`);
+    return [];
+  }
 }
 
 /**
@@ -176,78 +186,77 @@ async function getVideosFromPlaylist(playlistId) {
  * @returns {Promise.<Object>} A list of all videos in a playlist
  **/
 async function getVideoData(userVideoId) {
-  const parts = ['contentDetails', 'snippet', 'statistics', 'status'].join(',');
-  // Allow for either one or several ids
-  let videoIds = userVideoId;
-  const onlyOneVideoId = !_.isArray(videoIds);
-  if (onlyOneVideoId) {
-    videoIds = [videoIds];
-  }
-
-  videoIds.forEach(videoId => {
-    pulse.emit('video:data:start', videoId);
-  });
-  const response = await get('videos', {
-    id: videoIds.join(','),
-    part: parts,
-  });
-  logCall(`videos/${_.first(videoIds)}-to-${_.last(videoIds)}.json`, response);
-
-  const videoData = await Promise.map(response.items, async data => {
-    const videoId = data.id;
-    const videoTitle = data.snippet.title;
-    const hasCaptions = data.contentDetails.caption === 'true';
-    const publishedDate = dayjs(data.snippet.publishedAt).unix();
-    const viewCount = _.parseInt(data.statistics.viewCount);
-    const likeCount = _.parseInt(data.statistics.likeCount);
-    const dislikeCount = _.parseInt(data.statistics.dislikeCount);
-    const favoriteCount = _.parseInt(data.statistics.favoriteCount);
-    const commentCount = _.parseInt(data.statistics.commentCount);
-
-    let captions;
-    try {
-      captions = await getCaptions(videoId);
-    } catch (err) {
-      pulse.emit('video:error', videoId, 'No captions found');
-      return {};
+  try {
+    const parts = ['contentDetails', 'snippet', 'statistics', 'status'].join(',');
+    // Allow for either one or several ids
+    let videoIds = userVideoId;
+    const onlyOneVideoId = !_.isArray(videoIds);
+    if (onlyOneVideoId) {
+      videoIds = [videoIds];
     }
 
-    return {
-      videoId,
-      publishedDate,
-      title: videoTitle,
-      description: data.snippet.description,
-      thumbnails: data.snippet.thumbnails,
-      channel: {
-        id: data.snippet.channelId,
-        title: data.snippet.channelTitle,
-      },
-      captions,
+    videoIds.forEach(videoId => {
+      pulse.emit('video:data:start', videoId);
+    });
+    const response = await get('videos', {
+      id: videoIds.join(','),
+      part: parts,
+    });
+    logCall(`videos/${_.first(videoIds)}-to-${_.last(videoIds)}.json`, response);
 
-      defaultLanguage: data.snippet.defaultAudioLanguage,
-      hasCaptions,
-      licenseType: data.status.license,
-      isEmbeddable: data.status.embeddable,
+    const videoData = await Promise.map(response.items, async data => {
+      const videoId = data.id;
+      const videoTitle = data.snippet.title;
+      const hasCaptions = data.contentDetails.caption === 'true';
+      const publishedDate = dayjs(data.snippet.publishedAt).unix();
+      const viewCount = _.parseInt(data.statistics.viewCount);
+      const likeCount = _.parseInt(data.statistics.likeCount);
+      const dislikeCount = _.parseInt(data.statistics.dislikeCount);
+      const favoriteCount = _.parseInt(data.statistics.favoriteCount);
+      const commentCount = _.parseInt(data.statistics.commentCount);
 
-      ranking: {
-        views: viewCount,
-        likes: likeCount,
-        dislikes: dislikeCount,
-        favorites: favoriteCount,
-        comments: commentCount,
-      },
-    };
-  });
+      const captions = await getCaptions(videoId);
 
-  videoIds.forEach((videoId, index) => {
-    pulse.emit('video:data:end', videoId, videoData[index]);
-  });
+      return {
+        videoId,
+        publishedDate,
+        title: videoTitle,
+        description: data.snippet.description,
+        thumbnails: data.snippet.thumbnails,
+        channel: {
+          id: data.snippet.channelId,
+          title: data.snippet.channelTitle,
+        },
+        captions,
 
-  // Return only data if only one id passed initially
-  if (onlyOneVideoId) {
-    return videoData[0];
+        defaultLanguage: data.snippet.defaultAudioLanguage,
+        hasCaptions,
+        licenseType: data.status.license,
+        isEmbeddable: data.status.embeddable,
+
+        ranking: {
+          views: viewCount,
+          likes: likeCount,
+          dislikes: dislikeCount,
+          favorites: favoriteCount,
+          comments: commentCount,
+        },
+      };
+    });
+
+    videoIds.forEach((videoId, index) => {
+      pulse.emit('video:data:end', videoId, videoData[index]);
+    });
+
+    // Return only data if only one id passed initially
+    if (onlyOneVideoId) {
+      return videoData[0];
+    }
+    return videoData;
+  } catch (err) {
+    pulse.emit('error', err, `getVideoData(${userVideoId})`);
+    return {};
   }
-  return videoData;
 }
 
 /**
@@ -261,16 +270,16 @@ async function getVideoData(userVideoId) {
  * parsed to make a cohesive object.
  **/
 async function getRawVideoInfo(videoId) {
-  pulse.emit('video:raw:start', videoId);
-  /* eslint-disable camelcase */
-  const options = {
-    url: 'http://www.youtube.com/get_video_info',
-    params: {
-      video_id: videoId,
-    },
-  };
-
   try {
+    pulse.emit('video:raw:start', videoId);
+    /* eslint-disable camelcase */
+    const options = {
+      url: 'http://www.youtube.com/get_video_info',
+      params: {
+        video_id: videoId,
+      },
+    };
+
     const results = await axios(options);
     logCall(`get_video_info/${videoId}.txt`, results.data);
 
@@ -285,47 +294,58 @@ async function getRawVideoInfo(videoId) {
     pulse.emit('video:raw:end', params);
     return params;
   } catch (err) {
-    return errorHandler(err);
+    pulse.emit('error', err, `getRawVideoInfo/${videoId}`);
+    return {};
   }
   /* eslint-enable camelcase */
 }
 
-async function getCaptions(videoId) {
-  const rawData = await getRawVideoInfo(videoId);
-  const captionList = _.get(
-    rawData,
-    'player_response.captions.playerCaptionsTracklistRenderer.captionTracks'
-  );
-  const captionUrl = _.find(captionList, { languageCode: 'en' }).baseUrl;
-
-  pulse.emit('video:captions:start', videoId);
-  const xml = await axios.get(captionUrl);
-  logCall(`captions/${videoId}.xml`, xml.data);
-
-  const $ = cheerio.load(xml.data, { xmlMode: true });
-  const texts = $('text');
-  const captions = _.map(texts, node => {
-    const $node = $(node);
-    const content = cheerio.load($node.text()).text();
-    const start = $node.attr('start');
-    const duration = $node.attr('dur');
-    return {
-      content,
-      start,
-      duration,
-    };
-  });
-
-  pulse.emit('video:captions:end', videoId, captions);
-  return captions;
+async function getCaptionsUrl(videoId) {
+  try {
+    const rawData = await getRawVideoInfo(videoId);
+    const captionList = _.get(
+      rawData,
+      'player_response.captions.playerCaptionsTracklistRenderer.captionTracks'
+    );
+    return _.find(captionList, { languageCode: 'en' }).baseUrl;
+  } catch (err) {
+    pulse.emit('error', err, `getCaptionsUrl(${videoId})`);
+    return '';
+  }
 }
 
-function errorHandler(response) {
-  /* eslint-disable no-console */
-  console.info(response);
-  console.error(response.response.data.error);
-  /* eslint-enable no-console */
-  return undefined;
+async function getCaptions(videoId) {
+  try {
+    const captionUrl = await getCaptionsUrl(videoId);
+
+    pulse.emit('video:captions:start', videoId);
+    const xml = await axios.get(captionUrl);
+    logCall(`captions/${videoId}.xml`, xml.data);
+
+    const $ = cheerio.load(xml.data, { xmlMode: true });
+    const texts = $('text');
+    const captions = _.map(texts, node => {
+      const $node = $(node);
+      const content = cheerio.load($node.text()).text();
+      const start = $node.attr('start');
+      const duration = $node.attr('dur');
+      return {
+        content,
+        start,
+        duration,
+      };
+    });
+
+    pulse.emit('video:captions:end', videoId, captions);
+    if (captions.length === 0) {
+      pulse.emit('video:error', videoId, 'No captions found');
+    }
+    return captions;
+  } catch (err) {
+    pulse.emit('video:error', videoId, 'Unable to get captions');
+    pulse.emit('error', err, `getCaptions(${videoId})`);
+    return [];
+  }
 }
 
 const Youtube = {

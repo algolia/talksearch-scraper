@@ -1,10 +1,12 @@
 import chalk from 'chalk';
+import _ from 'lodash';
 import MultiProgressBar from 'multi-progress';
 const progressBars = new MultiProgressBar();
 
 let progressPlaylist = null;
 const progressVideos = {};
 const displayTokens = { captions: 0 };
+const errors = [];
 
 /**
  * Increment playlist progressbar by specified value
@@ -65,6 +67,13 @@ function createPlaylistProgressBar(max) {
 }
 
 const Progress = {
+  displayErrors() {
+    process.stdout.cursorTo(0, 10000);
+    _.each(errors, error => {
+      console.info(chalk.red(error.title));
+      console.error(error.error);
+    });
+  },
   onPlaylistGetPage(playlistId, pageInfo) {
     // First call, we create the progress bar
     if (!progressPlaylist) {
@@ -78,7 +87,10 @@ const Progress = {
   onPlaylistGetEnd() {
     // Move cursor offscreen, it will force to put it at the lowest it can be
     process.stdout.cursorTo(0, 10000);
-    console.info(chalk.bold.green('\n✔ All done'));
+
+    if (errors.length === 0) {
+      console.info(chalk.bold.green('\n✔ All done'));
+    }
   },
 
   onVideoDataStart(videoId) {
@@ -104,12 +116,15 @@ const Progress = {
     // const captionsCount = data.captions.length;
     // displayTokens.captions += captionsCount;
     // refreshPlaylist();
-
     // refreshVideo(videoId, `✔ Done (${captionsCount} captions)`);
   },
 
   onVideoError(videoId, errorMessage) {
-    refreshVideo(videoId, chalk.red.bold(`✘ ${errorMessage}`));
+    refreshVideo(videoId, chalk.red(`✘ ${errorMessage}`));
+  },
+
+  onError(error, title) {
+    errors.push({ error, title });
   },
 };
 

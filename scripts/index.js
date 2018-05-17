@@ -11,6 +11,7 @@ youtube.on('video:data:end', progress.onVideoDataEnd);
 youtube.on('video:captions:start', progress.onVideoCaptionsStart);
 youtube.on('video:raw:start', progress.onVideoRawStart);
 youtube.on('video:error', progress.onVideoError);
+youtube.on('error', progress.onError);
 
 /**
  * Parsing command line arguments
@@ -40,4 +41,5 @@ const logCalls = argv.logCalls;
   if (toCache) {
     await algolia.writeToCache(videos);
   }
+  progress.displayErrors();
 })();
