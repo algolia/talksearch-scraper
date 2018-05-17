@@ -151,6 +151,7 @@ async function getPlaylistData(playlistId) {
  * @param {String|Array.<String>} userVideoId The id (or array of ids) of the
  * video to get data from
  * @returns {Promise.<Object>} A list of all videos in a playlist
+ * TOTEST
  **/
 async function getVideoData(userVideoId) {
   try {
@@ -247,6 +248,7 @@ async function getVideoData(userVideoId) {
  * Note: This call does not use the API,but a rather obscure, undocumented,
  * endpoint. The data returned itself is in a variety of formats that has to be
  * parsed to make a cohesive object.
+ * TOTEST
  **/
 async function getRawVideoInfo(videoId) {
   try {
@@ -305,6 +307,7 @@ async function getCaptionsUrl(videoId) {
  *
  * @param {String} videoId Id of the video
  * @returns {Array} Array of captions
+ * TOTEST
  **/
 async function getCaptions(videoId) {
   try {
@@ -381,6 +384,8 @@ const Youtube = {
   // being internals, and not part of the public API
   internals: {
     getCaptionsUrl,
+    getPlaylistData,
+    getVideosFromPlaylist,
   },
 };
 
