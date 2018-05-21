@@ -1,5 +1,6 @@
 import fileutils from '../src/fileutils';
 import youtube from '../src/youtube';
+import transformer from '../src/transformer';
 import progress from '../src/progress';
 import yargs from 'yargs';
 
@@ -29,7 +30,7 @@ const argv = yargs
       describe: 'Push records from cache instead of requesting API',
       default: false,
     },
-    'log': {
+    log: {
       describe: 'Save HTTP call results to disk',
       default: false,
     },
@@ -43,15 +44,15 @@ const fromCache = argv.fromCache;
 const logCalls = argv.log;
 
 (async () => {
-  youtube.init({ logCalls, fromCache });
+  youtube.init({ logCalls, fromCache, toCache });
   // Getting videos from Youtube
   const videos = await youtube.getVideosFromUrl(url);
   progress.displayErrors();
 
-  // Writing to cache
-  if (toCache) {
-    const playlistId = videos[0].playlist.id;
-    await fileutils.writeJSON(`./cache/${playlistId}.json`, videos);
-    return;
-  }
+  // Transform videos in records
+  const records = transformer.run(videos);
+
+  console.info(records[0]);
+  console.info(records[1]);
+
 })();

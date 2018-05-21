@@ -1,23 +1,15 @@
+/* eslint-disable import/no-commonjs */
 import module from './youtube';
+import helper from './test-helper';
 jest.mock('./disk-logger');
 jest.mock('./fileutils');
 jest.mock('axios');
 const axios = require('axios');
 
-function mockPrivate(methodName, returnValue = undefined) {
-  const mockMethod = jest.fn(() => returnValue);
-  module.__RewireAPI__.__Rewire__(methodName, mockMethod);
-  return mockMethod;
-}
-
 let current;
 
 describe('youtube', () => {
-  beforeEach(() => {
-    __rewire_reset_all__();
-    jest.resetAllMocks();
-    jest.restoreAllMocks();
-  });
+  beforeEach(helper.globalBeforeEach);
 
   describe('getVideosFromUrl', () => {
     beforeEach(() => {
@@ -33,7 +25,8 @@ describe('youtube', () => {
     });
 
     it('return playlist videos if a playlist is given', async () => {
-      const getVideosFromPlaylist = mockPrivate(
+      const getVideosFromPlaylist = helper.mockPrivate(
+        module,
         'getVideosFromPlaylist',
         '{allVideos}'
       );
@@ -63,7 +56,7 @@ describe('youtube', () => {
           },
         ],
       };
-      mockPrivate('get', mockValue);
+      helper.mockPrivate(module, 'get', mockValue);
 
       const actual = await current(playlistId);
 
@@ -81,9 +74,9 @@ describe('youtube', () => {
     it('returns a list of videos with data', async () => {
       // Given
       const playlistId = 42;
-      mockPrivate('getPlaylistData', { name: 'playlist_name' });
+      helper.mockPrivate(module, 'getPlaylistData', { name: 'playlist_name' });
 
-      const mockGet = mockPrivate('get');
+      const mockGet = helper.mockPrivate(module, 'get');
       mockGet.mockReturnValueOnce({
         pageInfo: {
           totalResults: 3,
@@ -127,7 +120,7 @@ describe('youtube', () => {
         ],
       });
 
-      const mockGetVideoData = mockPrivate('getVideoData');
+      const mockGetVideoData = helper.mockPrivate(module, 'getVideoData');
       mockGetVideoData.mockReturnValueOnce([
         {
           video: {
@@ -191,7 +184,7 @@ describe('youtube', () => {
     });
 
     it('returns a list of captions', async () => {
-      mockPrivate('getCaptionsUrl', '{caption_url}');
+      helper.mockPrivate(module, 'getCaptionsUrl', '{caption_url}');
       jest.spyOn(axios, 'get').mockReturnValue({
         data: `<?xml version="1.0" encoding="utf-8"?>
 <transcript>
@@ -206,13 +199,13 @@ describe('youtube', () => {
       expect(axios.get).toHaveBeenCalledWith('{caption_url}');
       expect(actual).toHaveLength(2);
       expect(actual[0]).toHaveProperty('start', 13.28);
-      expect(actual[0]).toHaveProperty('duration', 5.499);
+      expect(actual[0]).toHaveProperty('duration', 5.5);
       expect(actual[0]).toHaveProperty('content', 'foo bar');
       expect(actual[1]).toHaveProperty('content', 'bar baz');
     });
 
     it('removes HTML from captions', async () => {
-      mockPrivate('getCaptionsUrl', '{caption_url}');
+      helper.mockPrivate(module, 'getCaptionsUrl', '{caption_url}');
       jest.spyOn(axios, 'get').mockReturnValue({
         data: `<?xml version="1.0" encoding="utf-8"?>
 <transcript>
@@ -227,7 +220,7 @@ describe('youtube', () => {
     });
 
     it('returns an empty array if no url found', async () => {
-      mockPrivate('getCaptionsUrl', null);
+      helper.mockPrivate(module, 'getCaptionsUrl', null);
 
       const actual = await current(42);
 
@@ -235,7 +228,7 @@ describe('youtube', () => {
     });
 
     it('returns an empty array if no captions', async () => {
-      mockPrivate('getCaptionsUrl', '{caption_url}');
+      helper.mockPrivate(module, 'getCaptionsUrl', '{caption_url}');
       jest.spyOn(axios, 'get').mockReturnValue({
         data: `<?xml version="1.0" encoding="utf-8"?>
 <transcript>
@@ -268,7 +261,7 @@ describe('youtube', () => {
           },
         },
       };
-      mockPrivate('getRawVideoInfo', mockValue);
+      helper.mockPrivate(module, 'getRawVideoInfo', mockValue);
       const input = 'videoId';
 
       const actual = await current(input);
@@ -286,7 +279,7 @@ describe('youtube', () => {
           },
         },
       };
-      mockPrivate('getRawVideoInfo', mockValue);
+      helper.mockPrivate(module, 'getRawVideoInfo', mockValue);
       const input = 'videoId';
 
       const actual = await current(input);

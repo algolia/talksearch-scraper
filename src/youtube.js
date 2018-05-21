@@ -13,9 +13,11 @@ const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 const pulse = new EventEmitter();
 
 let readFromCache = false;
+let writeToCache = false;
 function init(options) {
   diskLogger.enabled = options.logCalls;
   readFromCache = options.fromCache;
+  writeToCache = options.toCache;
 }
 
 /**
@@ -34,12 +36,15 @@ async function getVideosFromUrl(url) {
     ...(params.v ? { videoId: params.v } : {}),
   };
   const playlistId = urlData.playlistId;
+  let videos = [];
   if (playlistId) {
-    const videos = await getVideosFromPlaylist(playlistId);
-    return videos;
+    videos = await getVideosFromPlaylist(playlistId);
+    if (writeToCache) {
+      await fileutils.writeJSON(`./cache/${playlistId}.json`, videos);
+    }
   }
 
-  return [];
+  return videos;
 }
 
 /**
@@ -325,8 +330,8 @@ async function getCaptions(videoId) {
     const captions = _.map(texts, node => {
       const $node = $(node);
       const content = cheerio.load($node.text()).text();
-      const start = parseFloat($node.attr('start'));
-      const duration = parseFloat($node.attr('dur'));
+      const start = _.round(parseFloat($node.attr('start')), 2);
+      const duration = _.round(parseFloat($node.attr('dur')), 2);
       return {
         content,
         start,
