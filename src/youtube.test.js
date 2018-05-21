@@ -1,7 +1,8 @@
 import module from './youtube';
 jest.mock('./disk-logger');
 jest.mock('./fileutils');
-const anything = expect.anything();
+jest.mock('axios');
+const axios = require('axios');
 
 function mockPrivate(methodName, returnValue = undefined) {
   const mockMethod = jest.fn(() => returnValue);
@@ -14,6 +15,8 @@ let current;
 describe('youtube', () => {
   beforeEach(() => {
     __rewire_reset_all__();
+    jest.resetAllMocks();
+    jest.restoreAllMocks();
   });
 
   describe('getVideosFromUrl', () => {
@@ -179,6 +182,70 @@ describe('youtube', () => {
       expect(actual[2]).toHaveProperty('video.positionInPlaylist', 2);
       expect(actual[2]).toHaveProperty('video.name', 'video_name_baz');
       expect(actual[2]).toHaveProperty('playlist.name', 'playlist_name');
+    });
+  });
+
+  describe('getCaptions', () => {
+    beforeEach(() => {
+      current = module.internals.getCaptions;
+    });
+
+    it('returns a list of captions', async () => {
+      mockPrivate('getCaptionsUrl', '{caption_url}');
+      jest.spyOn(axios, 'get').mockReturnValue({
+        data: `<?xml version="1.0" encoding="utf-8"?>
+<transcript>
+  <text dur="5.499" start="13.28">foo bar</text>
+  <text dur="5.25" start="16.02">bar baz</text>
+</transcript>
+`,
+      });
+
+      const actual = await current(42);
+
+      expect(axios.get).toHaveBeenCalledWith('{caption_url}');
+      expect(actual).toHaveLength(2);
+      expect(actual[0]).toHaveProperty('start', 13.28);
+      expect(actual[0]).toHaveProperty('duration', 5.499);
+      expect(actual[0]).toHaveProperty('content', 'foo bar');
+      expect(actual[1]).toHaveProperty('content', 'bar baz');
+    });
+
+    it('removes HTML from captions', async () => {
+      mockPrivate('getCaptionsUrl', '{caption_url}');
+      jest.spyOn(axios, 'get').mockReturnValue({
+        data: `<?xml version="1.0" encoding="utf-8"?>
+<transcript>
+  <text dur="5.25" start="16.02">&lt;font color="#CCCCCC"&gt;foo&lt;/font&gt;&lt;font color="#E5E5E5"&gt; bar&lt;/font&gt;</text>
+</transcript>
+`,
+      });
+
+      const actual = await current(42);
+
+      expect(actual[0]).toHaveProperty('content', 'foo bar');
+    });
+
+    it('returns an empty array if no url found', async () => {
+      mockPrivate('getCaptionsUrl', null);
+
+      const actual = await current(42);
+
+      expect(actual).toEqual([]);
+    });
+
+    it('returns an empty array if no captions', async () => {
+      mockPrivate('getCaptionsUrl', '{caption_url}');
+      jest.spyOn(axios, 'get').mockReturnValue({
+        data: `<?xml version="1.0" encoding="utf-8"?>
+<transcript>
+</transcript>
+`,
+      });
+
+      const actual = await current(42);
+
+      expect(actual).toEqual([]);
     });
   });
 

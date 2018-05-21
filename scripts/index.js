@@ -29,7 +29,7 @@ const argv = yargs
       describe: 'Push records from cache instead of requesting API',
       default: false,
     },
-    'log-calls': {
+    'log': {
       describe: 'Save HTTP call results to disk',
       default: false,
     },
@@ -40,7 +40,7 @@ const argv = yargs
 const url = argv.url;
 const toCache = argv.toCache;
 const fromCache = argv.fromCache;
-const logCalls = argv.logCalls;
+const logCalls = argv.log;
 
 (async () => {
   youtube.init({ logCalls, fromCache });

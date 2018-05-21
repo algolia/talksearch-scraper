@@ -307,7 +307,6 @@ async function getCaptionsUrl(videoId) {
  *
  * @param {String} videoId Id of the video
  * @returns {Array} Array of captions
- * TOTEST
  **/
 async function getCaptions(videoId) {
   try {
@@ -326,8 +325,8 @@ async function getCaptions(videoId) {
     const captions = _.map(texts, node => {
       const $node = $(node);
       const content = cheerio.load($node.text()).text();
-      const start = $node.attr('start');
-      const duration = $node.attr('dur');
+      const start = parseFloat($node.attr('start'));
+      const duration = parseFloat($node.attr('dur'));
       return {
         content,
         start,
@@ -384,6 +383,7 @@ const Youtube = {
   // being internals, and not part of the public API
   internals: {
     getCaptionsUrl,
+    getCaptions,
     getPlaylistData,
     getVideosFromPlaylist,
   },
