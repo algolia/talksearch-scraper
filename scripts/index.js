@@ -1,7 +1,8 @@
-import fileutils from '../src/fileutils';
+import EventEmitter from 'events';
 import youtube from '../src/youtube';
 import transformer from '../src/transformer';
 import progress from '../src/progress';
+import algolia from '../src/algolia';
 import yargs from 'yargs';
 
 // Progress bar display
@@ -14,6 +15,19 @@ youtube.on('video:captions:start', progress.onVideoCaptionsStart);
 youtube.on('video:raw:start', progress.onVideoRawStart);
 youtube.on('video:error', progress.onVideoError);
 youtube.on('error', progress.onError);
+
+algolia.on('settings:before', () => {
+  console.info('Pushing settings');
+});
+algolia.on('push:before', () => {
+  console.info('Pushing records');
+});
+algolia.on('overwrite:before', () => {
+  console.info('Overwriting index');
+});
+algolia.on('overwrite:after', () => {
+  console.info('✔ Done');
+});
 
 /**
  * Parsing command line arguments
@@ -52,7 +66,6 @@ const logCalls = argv.log;
   // Transform videos in records
   const records = transformer.run(videos);
 
-  console.info(records[0]);
-  console.info(records[1]);
-
+  // Push records
+  await algolia.addRecords(records);
 })();

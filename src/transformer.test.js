@@ -24,17 +24,17 @@ describe('transform', () => {
 
     it('contains the video, playlist and channel info', () => {
       const input = {
-        video: 'foo',
-        playlist: 'baz',
-        channel: 'bar',
+        video: { id: 'foo' },
+        playlist: { id: 'bar' },
+        channel: { id: 'baz' },
         captions: [{ content: 'foo bar' }],
       };
 
       const actual = current(input);
 
-      expect(actual[0]).toHaveProperty('video', 'foo');
-      expect(actual[0]).toHaveProperty('playlist', 'baz');
-      expect(actual[0]).toHaveProperty('channel', 'bar');
+      expect(actual[0]).toHaveProperty('video.id', 'foo');
+      expect(actual[0]).toHaveProperty('playlist.id', 'bar');
+      expect(actual[0]).toHaveProperty('channel.id', 'baz');
     });
 
     it('contains aggregated duration', () => {
@@ -60,6 +60,45 @@ describe('transform', () => {
       expect(actual[0]).toHaveProperty('caption.start', 3);
       expect(actual[1]).toHaveProperty('caption.start', 5);
       expect(actual[2]).toHaveProperty('caption.start', 7);
+    });
+  });
+
+  describe('getPopularityScore', () => {
+    beforeEach(() => {
+      current = module.internals.getPopularityScore;
+    });
+
+    it('sums up all interactions', () => {
+      const input = {
+        popularity: {
+          comments: 1,
+          dislikes: 2,
+          favorites: 3,
+          likes: 4,
+          views: 5,
+        },
+      };
+
+      const actual = current(input);
+
+      expect(actual).toEqual(15);
+    });
+  });
+
+  describe('getBucketedDate', () => {
+    beforeEach(() => {
+      current = module.internals.getBucketedDate;
+    });
+
+    it('sums up all interactions', () => {
+      const input = 1521217180;
+
+      const actual = current(input);
+
+      expect(actual).toHaveProperty('year', 1514761200);
+      expect(actual).toHaveProperty('month', 1519858800);
+      expect(actual).toHaveProperty('day', 1521154800);
+      expect(actual).toHaveProperty('timestamp', input);
     });
   });
 });
