@@ -1,4 +1,3 @@
-import EventEmitter from 'events';
 import youtube from '../src/youtube';
 import transformer from '../src/transformer';
 import progress from '../src/progress';
@@ -34,7 +33,7 @@ algolia.on('overwrite:after', () => {
  **/
 const argv = yargs
   .usage('Usage: yarn index [url]')
-  .command('$0 <url> [options]', 'Index the videos of the specified url')
+  .command('$0 config [options]', 'Index the videos of the specified config')
   .options({
     'to-cache': {
       describe: 'Save API data to disk instead of pushing to Algolia',
@@ -52,20 +51,26 @@ const argv = yargs
   .help(false)
   .version(false).argv;
 
-const url = argv.url;
+const configName = argv.config;
 const toCache = argv.toCache;
 const fromCache = argv.fromCache;
 const logCalls = argv.log;
 
 (async () => {
-  youtube.init({ logCalls, fromCache, toCache });
-  // Getting videos from Youtube
-  const videos = await youtube.getVideosFromUrl(url);
-  progress.displayErrors();
+  try {
+    youtube.init({ logCalls, fromCache, toCache });
+    const config = require(`../configs/${configName}.js`);
 
-  // Transform videos in records
-  const records = transformer.run(videos);
+    // Getting videos from Youtube
+    const videos = await youtube.getVideosFromConfig(config);
+    progress.displayErrors();
 
-  // Push records
-  await algolia.addRecords(records);
+    // Transform videos in records
+    const records = transformer.run(videos);
+
+    // Push records
+    await algolia.addRecords(records, config);
+  } catch (err) {
+    console.info(err);
+  }
 })();

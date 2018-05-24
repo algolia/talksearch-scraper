@@ -1,11 +1,10 @@
-import Promise from 'bluebird';
+import { forEach, map } from 'p-iteration';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import cheerio from 'cheerio';
 import EventEmitter from 'events';
 import parseIsoDuration from 'parse-iso-duration';
 import qs from 'query-string';
-import urlParser from 'url';
 import diskLogger from './disk-logger';
 import fileutils from './fileutils';
 import _ from 'lodash';
@@ -20,55 +19,18 @@ function init(options) {
   writeToCache = options.toCache;
 }
 
-/**
- * Returns a list of videos from a Youtube url.
- * Correctly dispatch to channel or playlist
- *
- * @param {String} url The url to follow
- * @param {Object} options Options
- *  - logCalls {Boolean} If set to true, http calls results will be saved on disk
- * @returns {Promise.<Object>} The list of video
- **/
-async function getVideosFromUrl(url) {
-  const parsedUrl = urlParser.parse(url);
+async function getVideosFromConfig(config) {
+  let videos = [];
+  await forEach(config.playlists, async playlistId => {
+    const playlistVideos = await getVideosFromPlaylist(playlistId);
+    videos = _.concat(videos, playlistVideos);
+  });
 
-  // Is it a channel?
-  if (_.startsWith(parsedUrl.pathname, '/channel/')) {
-    const channelId = _.last(parsedUrl.pathname.split('/'));
-    const videos = await getVideosFromChannel(channelId);
-    if (writeToCache) {
-      await fileutils.writeJSON(`./cache/channel/${channelId}.json`, videos);
-    }
-    return videos;
+  if (writeToCache) {
+    await fileutils.writeJSON(`./cache/${config.indexName}.json`, videos);
   }
 
-  const params = qs.parse(parsedUrl.query);
-  const urlData = {
-    ...(params.list ? { playlistId: params.list } : {}),
-    ...(params.v ? { videoId: params.v } : {}),
-  };
-  const playlistId = urlData.playlistId;
-  const videoId = urlData.videoId;
-
-  // Is it a playlist?
-  if (playlistId) {
-    const videos = await getVideosFromPlaylist(playlistId);
-    if (writeToCache) {
-      await fileutils.writeJSON(`./cache/playlist/${playlistId}.json`, videos);
-    }
-    return videos;
-  }
-
-  // Is it one video?
-  if (videoId) {
-    const videos = await getVideoData(videoId);
-    if (writeToCache) {
-      await fileutils.writeJSON(`./cache/video/${videoId}.json`, videos);
-    }
-    return videos;
-  }
-
-  return [];
+  return videos;
 }
 
 /**
@@ -148,9 +110,6 @@ async function getVideosFromPlaylist(playlistId) {
   }
 }
 
-async function getVideosFromChannel(channelId) {
-}
-
 /**
  * Return details about a specific playlist
  *
@@ -197,7 +156,7 @@ async function getVideoData(userVideoId) {
       videoIds = [videoIds];
     }
 
-    videoIds.forEach(videoId => {
+    forEach(videoIds, videoId => {
       pulse.emit('video:data:start', videoId);
     });
     const response = await get('videos', {
@@ -209,7 +168,7 @@ async function getVideoData(userVideoId) {
       response
     );
 
-    const videoData = await Promise.map(response.items, async data => {
+    const videoData = await map(response.items, async data => {
       pulse.emit('video:data:basic', data.id, data);
 
       const videoId = data.id;
@@ -256,7 +215,7 @@ async function getVideoData(userVideoId) {
       };
     });
 
-    videoIds.forEach((videoId, index) => {
+    forEach(videoIds, (videoId, index) => {
       pulse.emit('video:data:end', videoId, videoData[index]);
     });
 
@@ -406,7 +365,7 @@ async function get(endpoint, params) {
 const Youtube = {
   // Public methods
   init,
-  getVideosFromUrl,
+  getVideosFromConfig,
   // Allow dispatching of events
   on(eventName, callback) {
     pulse.on(eventName, callback);

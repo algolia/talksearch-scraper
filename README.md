@@ -6,18 +6,16 @@ playlists and push them to Algolia.
 ## Usage
 
 ```
-# Indexing one video
-yarn index 'https://www.youtube.com/watch?v=RLO9MJFi3sI'
-# Indexing one playlist
-yarn index ''https://www.youtube.com/playlist?list=PLMW8Xq7bXrG7AAvnkys8joKEq8uMGykx7'
-# Indexing one channel
-yarn index 'https://www.youtube.com/channel/UCSRhwaM00ay0fasnsw6EXKA'
+yarn index {config_name}
 ```
 
 ## How it works
 
-The command will use the YouTube API to fetch data about the
-channel/playlist/video and push them to Algolia.
+The `./configs/` folder contain custom configs, each containing a list of
+playlists to index.
+
+The command will use the YouTube API to fetch data about the defined playlists
+and push them to Algolia.
 
 Captions will be extracted from the videos if they are available. Each record in
 Algolia will represent one caption, also containing a `.video`, `.playlist` and

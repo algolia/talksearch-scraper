@@ -6,9 +6,8 @@ const pulse = new EventEmitter();
 
 const client = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_API_KEY);
 
-async function addRecords(records) {
-  const sample = records[0];
-  const indexName = `${sample.channel.title}_${sample.channel.id}`;
+async function addRecords(records, config) {
+  const indexName = config.indexName;
   const indexNameTmp = `${indexName}_tmp`;
 
   const settings = {
@@ -44,19 +43,34 @@ async function addRecords(records) {
 
   // Create temporary index
   const indexTmp = client.initIndex(indexNameTmp);
-  pulse.emit('settings:before');
-  await indexTmp.setSettings(settings);
-  pulse.emit('settings:after');
+  try {
+    pulse.emit('settings:before');
+    await indexTmp.setSettings(settings);
+    pulse.emit('settings:after');
+  } catch (err) {
+    console.info(err);
+    console.error('Unable to create index');
+  }
 
   // Push to temp
-  pulse.emit('push:before');
-  await indexTmp.addObjects(records);
-  pulse.emit('push:after');
+  try {
+    pulse.emit('push:before');
+    await indexTmp.addObjects(records);
+    pulse.emit('push:after');
+  } catch (err) {
+    console.info(err);
+    console.error('Unable to push to temp index');
+  }
 
   // Overwrite production
-  pulse.emit('overwrite:before');
-  await client.moveIndex(indexNameTmp, indexName);
-  pulse.emit('overwrite:after');
+  try {
+    pulse.emit('overwrite:before');
+    await client.moveIndex(indexNameTmp, indexName);
+    pulse.emit('overwrite:after');
+  } catch (err) {
+    console.info(err);
+    console.error('Unable to overwrite production index');
+  }
 }
 
 const Algolia = {
