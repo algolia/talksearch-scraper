@@ -24,18 +24,60 @@ describe('youtube', () => {
       expect(actual).toEqual([]);
     });
 
-    it('return playlist videos if a playlist is given', async () => {
-      const getVideosFromPlaylist = helper.mockPrivate(
-        module,
-        'getVideosFromPlaylist',
-        '{allVideos}'
-      );
+    describe('video', () => {
+      it('return data about one video only', async () => {
+        const getVideoData = helper.mockPrivate(module, 'getVideoData');
 
-      const input = 'https://www.youtube.com/watch?list=DEADBEEF';
-      const actual = await current(input);
+        const input = 'https://www.youtube.com/watch?v=video_id';
 
-      expect(getVideosFromPlaylist).toHaveBeenCalledWith('DEADBEEF');
-      expect(actual).toEqual('{allVideos}');
+        await current(input);
+
+        expect(getVideoData).toHaveBeenCalledWith('video_id');
+      });
+    });
+
+    describe('playlist', () => {
+      it('return playlist videos if a playlist is given', async () => {
+        const getVideosFromPlaylist = helper.mockPrivate(
+          module,
+          'getVideosFromPlaylist',
+          '{allVideos}'
+        );
+
+        const input = 'https://www.youtube.com/watch?list=DEADBEEF';
+        const actual = await current(input);
+
+        expect(getVideosFromPlaylist).toHaveBeenCalledWith('DEADBEEF');
+        expect(actual).toEqual('{allVideos}');
+      });
+
+      it('return playlist videos from url with playlist and video', async () => {
+        const getVideosFromPlaylist = helper.mockPrivate(
+          module,
+          'getVideosFromPlaylist'
+        );
+
+        const input =
+          'https://www.youtube.com/watch?v=video_id&list=playlist_id';
+        await current(input);
+
+        expect(getVideosFromPlaylist).toHaveBeenCalledWith('playlist_id');
+      });
+    });
+
+    describe('channel', () => {
+      it('return all videos from channel', async () => {
+        const getVideosFromChannel = helper.mockPrivate(
+          module,
+          'getVideosFromChannel'
+        );
+
+        const input = 'https://www.youtube.com/channel/channel_id';
+
+        await current(input);
+
+        expect(getVideosFromChannel).toHaveBeenCalledWith('channel_id');
+      });
     });
   });
 

@@ -30,21 +30,45 @@ function init(options) {
  * @returns {Promise.<Object>} The list of video
  **/
 async function getVideosFromUrl(url) {
-  const params = qs.parse(urlParser.parse(url).query);
+  const parsedUrl = urlParser.parse(url);
+
+  // Is it a channel?
+  if (_.startsWith(parsedUrl.pathname, '/channel/')) {
+    const channelId = _.last(parsedUrl.pathname.split('/'));
+    const videos = await getVideosFromChannel(channelId);
+    if (writeToCache) {
+      await fileutils.writeJSON(`./cache/channel/${channelId}.json`, videos);
+    }
+    return videos;
+  }
+
+  const params = qs.parse(parsedUrl.query);
   const urlData = {
     ...(params.list ? { playlistId: params.list } : {}),
     ...(params.v ? { videoId: params.v } : {}),
   };
   const playlistId = urlData.playlistId;
-  let videos = [];
+  const videoId = urlData.videoId;
+
+  // Is it a playlist?
   if (playlistId) {
-    videos = await getVideosFromPlaylist(playlistId);
+    const videos = await getVideosFromPlaylist(playlistId);
     if (writeToCache) {
-      await fileutils.writeJSON(`./cache/${playlistId}.json`, videos);
+      await fileutils.writeJSON(`./cache/playlist/${playlistId}.json`, videos);
     }
+    return videos;
   }
 
-  return videos;
+  // Is it one video?
+  if (videoId) {
+    const videos = await getVideoData(videoId);
+    if (writeToCache) {
+      await fileutils.writeJSON(`./cache/video/${videoId}.json`, videos);
+    }
+    return videos;
+  }
+
+  return [];
 }
 
 /**
@@ -122,6 +146,9 @@ async function getVideosFromPlaylist(playlistId) {
     pulse.emit('error', err, `getVideosFromPlaylist(${playlistId})`);
     return [];
   }
+}
+
+async function getVideosFromChannel(channelId) {
 }
 
 /**
