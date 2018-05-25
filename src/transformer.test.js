@@ -1,4 +1,9 @@
 /* eslint-disable import/no-commonjs */
+jest.mock('node-object-hash');
+const mockHashObject = jest.fn();
+require('node-object-hash').mockReturnValue({
+  hash: mockHashObject,
+});
 import module from './transformer';
 import helper from './test-helper';
 
@@ -60,6 +65,30 @@ describe('transform', () => {
       expect(actual[0]).toHaveProperty('caption.start', 3);
       expect(actual[1]).toHaveProperty('caption.start', 5);
       expect(actual[2]).toHaveProperty('caption.start', 7);
+    });
+
+    it('adds the caption position', () => {
+      const input = {
+        captions: [{ content: 'foo' }, { content: 'bar' }, { content: 'baz' }],
+      };
+
+      const actual = current(input);
+
+      expect(actual[0]).toHaveProperty('caption.position', 0);
+      expect(actual[1]).toHaveProperty('caption.position', 1);
+      expect(actual[2]).toHaveProperty('caption.position', 2);
+    });
+
+    it('adds a unique objectID', () => {
+      const input = {
+        captions: [{ content: 'foo' }, { content: 'bar' }],
+      };
+
+      mockHashObject.mockReturnValue('uuid');
+
+      const actual = current(input);
+
+      expect(actual[0]).toHaveProperty('objectID', 'uuid');
     });
   });
 

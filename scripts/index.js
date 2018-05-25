@@ -15,18 +15,18 @@ youtube.on('video:raw:start', progress.onVideoRawStart);
 youtube.on('video:error', progress.onVideoError);
 youtube.on('error', progress.onError);
 
-algolia.on('settings:before', () => {
-  console.info('Pushing settings');
-});
-algolia.on('push:before', () => {
-  console.info('Pushing records');
-});
-algolia.on('overwrite:before', () => {
-  console.info('Overwriting index');
-});
-algolia.on('overwrite:after', () => {
-  console.info('✔ Done');
-});
+// algolia.on('remoteObjectIds:start', progress.algolia.onPushBefore);
+// algolia.on('push:before', progress.algolia.onPushBefore);
+// algolia.on('push:chunk', progress.algolia.onPushChunk);
+// algolia.on('settings:before', () => {
+//   console.info('Pushing settings');
+// });
+// algolia.on('overwrite:before', () => {
+//   console.info('Overwriting index');
+// });
+// algolia.on('overwrite:after', () => {
+//   console.info('✔ Done');
+// });
 
 /**
  * Parsing command line arguments
@@ -35,12 +35,8 @@ const argv = yargs
   .usage('Usage: yarn index [url]')
   .command('$0 config [options]', 'Index the videos of the specified config')
   .options({
-    'to-cache': {
-      describe: 'Save API data to disk instead of pushing to Algolia',
-      default: false,
-    },
-    'from-cache': {
-      describe: 'Push records from cache instead of requesting API',
+    'use-cache': {
+      describe: 'Use the existing disk cache instead of requesting YouTube',
       default: false,
     },
     log: {
@@ -51,25 +47,20 @@ const argv = yargs
   .help(false)
   .version(false).argv;
 
-const configName = argv.config;
-const toCache = argv.toCache;
-const fromCache = argv.fromCache;
-const logCalls = argv.log;
-
 (async () => {
   try {
-    youtube.init({ logCalls, fromCache, toCache });
-    const config = require(`../configs/${configName}.js`);
+    youtube.init(argv);
 
-    // Getting videos from Youtube
-    const videos = await youtube.getVideosFromConfig(config);
+    const videos = await youtube.getVideos();
     progress.displayErrors();
 
     // Transform videos in records
     const records = transformer.run(videos);
+    console.info(records.length);
 
     // Push records
-    await algolia.addRecords(records, config);
+    algolia.init(argv);
+    await algolia.run(records);
   } catch (err) {
     console.info(err);
   }

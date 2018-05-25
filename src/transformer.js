@@ -1,8 +1,15 @@
 import _ from 'lodash';
 import dayjs from 'dayjs';
+import nodeObjectHash from 'node-object-hash';
 import { mapPairSlide } from './utils';
 
-// TODO: Documentation
+/**
+ * Compute a value for ranking based on the various popularity metrics.
+ * So far, it's an easy sum of all interactions (like/dislike/views/comments,
+ * etc).
+ * @param {Object} videoData Object of all interactions
+ * @return {Number} Popularity score
+ **/
 function getPopularityScore(videoData) {
   if (!_.has(videoData, 'popularity')) {
     return 0;
@@ -10,7 +17,13 @@ function getPopularityScore(videoData) {
   return _.sum(_.values(_.get(videoData, 'popularity')));
 }
 
-// TODO: Documentation
+/**
+ * Return an object representation of the date, with timestamp values capped at
+ * the start of the day, month and year. This will be used to limit ties in the
+ * custom ranking
+ * @param {Number} timestamp The exact timestamp
+ * @returns {Object} An object of capped timestamps
+ **/
 function getBucketedDate(timestamp) {
   const date = dayjs(timestamp * 1000);
   const yearGranularity = date.startOf('year');
@@ -35,11 +48,11 @@ const Transformer = {
     return records;
   },
 
-  // TODO: Documentation
-  // TODO: Test score and publishedDate added
   recordsFromVideo(video) {
+    const hashObject = nodeObjectHash().hash;
+
     // Group captions two by two, so each record is two lines of captions
-    return mapPairSlide(video.captions, (first, second = {}) => {
+    return mapPairSlide(video.captions, (first, second = {}, position) => {
       const content = [first.content, second.content].join(' ');
       const start = first.start;
       const duration = _.round(_.sum([first.duration, second.duration]), 2);
@@ -52,16 +65,22 @@ const Transformer = {
         getBucketedDate(videoData.publishedDate)
       );
 
-      return {
+      const record = {
         caption: {
           content,
           start,
           duration,
+          position,
         },
         video: videoData,
         playlist: video.playlist,
         channel: video.channel,
       };
+
+      // Set a unique objectID to identify the record
+      record.objectID = hashObject(record);
+
+      return record;
     });
   },
 

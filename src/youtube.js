@@ -1,5 +1,6 @@
 import { forEach, map } from 'p-iteration';
 import axios from 'axios';
+import _glob from 'glob';
 import dayjs from 'dayjs';
 import cheerio from 'cheerio';
 import EventEmitter from 'events';
@@ -7,28 +8,41 @@ import parseIsoDuration from 'parse-iso-duration';
 import qs from 'query-string';
 import diskLogger from './disk-logger';
 import fileutils from './fileutils';
+import pify from 'pify';
 import _ from 'lodash';
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 const pulse = new EventEmitter();
+const glob = pify(_glob);
 
-let readFromCache = false;
-let writeToCache = false;
-function init(options) {
-  diskLogger.enabled = options.logCalls;
-  readFromCache = options.fromCache;
-  writeToCache = options.toCache;
+let config = null;
+let runOptions = null;
+
+function init(argv) {
+  runOptions = {
+    useCache: argv.useCache,
+    configName: argv.config,
+  };
+  config = require(`../configs/${argv.config}.js`);
+
+  diskLogger.enabled = argv.log;
 }
 
-async function getVideosFromConfig(config) {
-  let videos = [];
-  await forEach(config.playlists, async playlistId => {
-    const playlistVideos = await getVideosFromPlaylist(playlistId);
-    videos = _.concat(videos, playlistVideos);
-  });
+async function getVideos() {
+  // Download YouTube data on disk
+  if (!runOptions.useCache) {
+    await forEach(config.playlists, async playlistId => {
+      const videos = await getVideosFromPlaylist(playlistId);
 
-  if (writeToCache) {
-    await fileutils.writeJSON(`./cache/${config.indexName}.json`, videos);
+      await fileutils.writeJSON(
+        `./cache/${config.indexName}/${playlistId}.json`,
+        videos
+      );
+    });
   }
+
+  // Read YouTube data from disk
+  const playlistFiles = await glob(`./cache/${config.indexName}/*.json`);
+  const videos = _.flatten(await map(playlistFiles, fileutils.readJSON));
 
   return videos;
 }
@@ -43,11 +57,6 @@ async function getVideosFromConfig(config) {
  * pages to get all videos.
  **/
 async function getVideosFromPlaylist(playlistId) {
-  // No need to call the API, we're reading it from cache
-  if (readFromCache) {
-    return fileutils.readJSON(`./cache/${playlistId}.json`);
-  }
-
   try {
     pulse.emit('playlist:get:start', playlistId);
     const resultsPerPage = 50;
@@ -365,7 +374,7 @@ async function get(endpoint, params) {
 const Youtube = {
   // Public methods
   init,
-  getVideosFromConfig,
+  getVideos,
   // Allow dispatching of events
   on(eventName, callback) {
     pulse.on(eventName, callback);

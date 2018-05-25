@@ -6,8 +6,8 @@ function mockPrivate(module, methodName, returnValue = undefined) {
 
 function globalBeforeEach() {
   __rewire_reset_all__();
-  jest.resetAllMocks();
-  jest.restoreAllMocks();
+  // jest.resetAllMocks();
+  // jest.restoreAllMocks();
 }
 
 export { mockPrivate, globalBeforeEach };

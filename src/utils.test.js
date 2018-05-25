@@ -19,8 +19,8 @@ describe('utils', () => {
 
       current(input, mockMethod);
 
-      expect(mockMethod).toHaveBeenCalledWith(1, 2);
-      expect(mockMethod).toHaveBeenLastCalledWith(3, 4);
+      expect(mockMethod.mock.calls[0]).toEqual([1, 2, 0]);
+      expect(mockMethod.mock.calls[1]).toEqual([3, 4, 1]);
     });
 
     it('call last element with undefined', () => {
@@ -29,8 +29,8 @@ describe('utils', () => {
 
       current(input, mockMethod);
 
-      expect(mockMethod).toHaveBeenCalledWith(1, 2);
-      expect(mockMethod).toHaveBeenLastCalledWith(3, undefined);
+      expect(mockMethod.mock.calls[0]).toEqual([1, 2, 0]);
+      expect(mockMethod.mock.calls[1]).toEqual([3, undefined, 1]);
     });
   });
 
@@ -41,20 +41,20 @@ describe('utils', () => {
 
     it('map each pair of item', () => {
       const input = [1, 2, 3, 4];
-      const method = (a, b) => _.sum([a, b]);
+      const method = (a, b, index) => _.sum([a, b, index]);
 
       const actual = current(input, method);
 
-      expect(actual).toEqual([3, 7]);
+      expect(actual).toEqual([3, 8]);
     });
 
     it('map each pair, even if not enough elements', () => {
       const input = [1, 2, 3];
-      const method = (a, b) => _.sum([a, b]);
+      const method = (a, b, index) => _.sum([a, b, index]);
 
       const actual = current(input, method);
 
-      expect(actual).toEqual([3, 3]);
+      expect(actual).toEqual([3, 4]);
     });
   });
 
@@ -69,10 +69,10 @@ describe('utils', () => {
 
       current(input, mockMethod);
 
-      expect(mockMethod.mock.calls[0]).toEqual([1, 2]);
-      expect(mockMethod.mock.calls[1]).toEqual([2, 3]);
-      expect(mockMethod.mock.calls[2]).toEqual([3, 4]);
-      expect(mockMethod.mock.calls[3]).toEqual([4, undefined]);
+      expect(mockMethod.mock.calls[0]).toEqual([1, 2, 0]);
+      expect(mockMethod.mock.calls[1]).toEqual([2, 3, 1]);
+      expect(mockMethod.mock.calls[2]).toEqual([3, 4, 2]);
+      expect(mockMethod.mock.calls[3]).toEqual([4, undefined, 3]);
     });
   });
 
@@ -83,11 +83,11 @@ describe('utils', () => {
 
     it('loop through pair of items', () => {
       const input = [1, 2, 3, 4];
-      const method = (a, b) => _.sum([a, b]);
+      const method = (a, b, index) => _.sum([a, b, index]);
 
       const actual = current(input, method);
 
-      expect(actual).toEqual([3, 5, 7, 4]);
+      expect(actual).toEqual([3, 6, 9, 7]);
     });
   });
 });

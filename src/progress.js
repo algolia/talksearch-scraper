@@ -4,9 +4,11 @@ import MultiProgressBar from 'multi-progress';
 const progressBars = new MultiProgressBar();
 
 let progressPlaylist = null;
+let progressRecords = null;
 const progressVideos = {};
 const displayTokens = { captions: 0 };
 const displayTokensVideo = {};
+const displayTokensRecords = { recordCount: 0 };
 const errors = [];
 
 /**
@@ -151,6 +153,25 @@ const Progress = {
 
   onError(error, title) {
     errors.push({ error, title });
+  },
+
+  algolia: {
+    onPushBefore(data) {
+      const recordCount = data.recordCount;
+      const max = data.chunkLength;
+      progressRecords = progressBars.newBar(
+        `[:bar] :recordCount/${recordCount}`,
+        {
+          total: max,
+          width: 30,
+        }
+      );
+      progressRecords.tick(0, displayTokensRecords);
+    },
+    onPushChunk(chunkSize) {
+      displayTokensRecords.recordCount += chunkSize;
+      progressRecords.tick(1, displayTokensRecords);
+    },
   },
 };
 
