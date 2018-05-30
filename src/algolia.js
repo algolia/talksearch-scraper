@@ -11,11 +11,8 @@ const client = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_API_KEY);
 const defaultIndexSettings = {
   searchableAttributes: [
     'video.title',
-    'playlist.title',
+    'author.name',
     'unordered(caption.content)',
-    'unordered(video.description)',
-    'unordered(playlist.description)',
-    'unordered(channel.title)',
   ],
   customRanking: [
     'desc(video.hasCaptions)',
@@ -27,6 +24,9 @@ const defaultIndexSettings = {
     'asc(caption.start)',
   ],
   attributesForFaceting: [
+    'author.name',
+    'conference.name',
+    'conference.year',
     'video.language',
     'video.hasManualCaptions',
     'video.id',
@@ -104,6 +104,7 @@ async function getRemoteObjectIDs() {
 }
 
 async function copyIndexSync(source, destination) {
+  console.info(`Copy ${source} to ${destination}`);
   try {
     const response = await client.copyIndex(source, destination);
     await indexes[source].waitTask(response.taskID);
@@ -122,6 +123,7 @@ async function moveIndexSync(source, destination) {
 }
 
 async function clearIndexSync(indexName) {
+  console.info(`Clear ${indexName} index`);
   try {
     const index = indexes[indexName];
     const response = await index.clearIndex();
@@ -132,6 +134,7 @@ async function clearIndexSync(indexName) {
 }
 
 async function setSettingsSync(indexName, settings) {
+  console.info(`Update settings on ${indexName}`);
   try {
     const index = indexes[indexName];
     const response = await index.setSettings(settings);
@@ -160,6 +163,8 @@ function buildDiffBatch(remoteIds, records, indexName) {
     indexName,
     body: recordsById[objectID],
   }));
+  console.info(`${deleteBatch.length} objects to delete`);
+  console.info(`${addBatch.length} objects to add`);
 
   return _.concat(deleteBatch, addBatch);
 }
@@ -184,6 +189,10 @@ async function runBatchSync(batches, userOptions = {}) {
     ...userOptions,
   };
   const chunks = _.chunk(batches, options.batchSize);
+  console.info(
+    `Pushing ${batches.length} batches in groups of ${options.batchSize}`
+  );
+  pulse.emit('batch:start', { uuid: options.uuid, chunkCount: chunks.length });
 
   await pMap(
     chunks,
@@ -196,18 +205,18 @@ async function runBatchSync(batches, userOptions = {}) {
         await pMap(_.keys(taskIDPerIndex), async indexName => {
           const taskID = taskIDPerIndex[indexName];
           await indexes[indexName].waitTask(taskID);
-          console.info(`Batch ${index} correctly executed`);
         });
 
-        // pulse.emit('push:chunk', chunk.length);
+        pulse.emit('batch:chunk', options.uuid);
       } catch (err) {
+        pulse.emit('batch:error', { uuid: options.uuid, batchIndex: index });
         errorHandler(err, `Unable to send batch #${index}`);
       }
     },
     { concurrency: options.concurrency }
   );
 
-  console.info('All batches sent');
+  pulse.emit('batch:end', options.uuid);
 }
 
 async function run(records) {
@@ -222,35 +231,31 @@ async function run(records) {
 
     // Create a tmp copy of the prod index to add our changes
     await copyIndexSync(indexProdName, indexTmpName);
-    console.info(`Create copy of prod index`);
 
     // Update settings
     await setSettingsSync(indexTmpName, defaultIndexSettings);
-    console.info(`Updated tmp index settings`);
 
     // Apply the diff between local and remote on the temp index
     const diffBatch = buildDiffBatch(remoteIds, records, indexTmpName);
-    console.info(`Sending ${diffBatch.length} batches orders`);
-    await runBatchSync(diffBatch);
+    await runBatchSync(diffBatch, { uuid: 'diff' });
 
     // Preparing a new manifest index
     await clearIndexSync(indexManifestTmpName);
-    console.info('Cleared tmp manifest index');
     const manifestBatch = buildManifestBatch(records, indexManifestTmpName);
-    await runBatchSync(manifestBatch);
+    await runBatchSync(manifestBatch, { uuid: 'manifest' });
 
     // Overwriting production indexes with temporary indexes
     await pAll([
       async () => {
         await moveIndexSync(indexManifestTmpName, indexManifestName);
-        console.info('Overwritten manifest');
+        console.info('✔ Manifest overwritten');
       },
       async () => {
         await moveIndexSync(indexTmpName, indexProdName);
-        console.info('Overwritten index');
+        console.info('✔ Production index overwritten');
       },
     ]);
-    console.info('✔ Done');
+    console.info('✔ All Done');
   } catch (err) {
     console.info(err);
     console.info('Unable to update records');

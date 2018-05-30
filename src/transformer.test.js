@@ -90,6 +90,24 @@ describe('transform', () => {
 
       expect(actual[0]).toHaveProperty('objectID', 'uuid');
     });
+
+    it('set the popularity score to each record', () => {
+      const input = {
+        video: {
+          popularity: {
+            like: 10,
+            dislike: 1,
+            view: 100,
+          },
+        },
+        captions: [{ content: 'foo' }, { content: 'bar' }],
+      };
+
+      const actual = current(input);
+
+      expect(actual[0]).toHaveProperty('video.popularity.score', 111);
+      expect(actual[1]).toHaveProperty('video.popularity.score', 111);
+    });
   });
 
   describe('getPopularityScore', () => {

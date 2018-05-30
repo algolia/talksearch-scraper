@@ -1,4 +1,5 @@
 /* eslint-disable import/no-commonjs */
+import _ from 'lodash';
 module.exports = {
   indexName: 'dotconferences',
   playlists: [
@@ -28,4 +29,16 @@ module.exports = {
     'PLMW8Xq7bXrG486Mh95hKjiXRdci60zUlL', // dotJS 2013
     'PLMW8Xq7bXrG7XGG29sXso2hYYNW_14s_A', // dotScale 2013
   ],
+  transformData(record) {
+    const rawTitle = _.get(record, 'video.title');
+    const [alpha, authorName, title] = rawTitle.split(' - ');
+    const [conferenceName, conferenceYear] = alpha.split(' ');
+
+    _.set(record, 'conference.name', conferenceName);
+    _.set(record, 'conference.year', _.parseInt(conferenceYear));
+    _.set(record, 'author.name', authorName);
+    _.set(record, 'video.title', title);
+
+    return record;
+  },
 };

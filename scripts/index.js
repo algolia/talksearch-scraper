@@ -15,6 +15,10 @@ youtube.on('video:raw:start', progress.onVideoRawStart);
 youtube.on('video:error', progress.onVideoError);
 youtube.on('error', progress.onError);
 
+algolia.on('batch:start', progress.algolia.onBatchStart);
+algolia.on('batch:chunk', progress.algolia.onBatchChunk);
+algolia.on('batch:end', progress.algolia.onBatchEnd);
+
 // algolia.on('remoteObjectIds:start', progress.algolia.onPushBefore);
 // algolia.on('push:before', progress.algolia.onPushBefore);
 // algolia.on('push:chunk', progress.algolia.onPushChunk);
@@ -50,16 +54,18 @@ const argv = yargs
 (async () => {
   try {
     youtube.init(argv);
+    algolia.init(argv);
+    transformer.init(argv);
 
     const videos = await youtube.getVideos();
     progress.displayErrors();
+    console.info(`${videos.length} videos found`);
 
     // Transform videos in records
     const records = transformer.run(videos);
-    console.info(records.length);
+    console.info(`${records.length} records generated`);
 
     // Push records
-    algolia.init(argv);
     await algolia.run(records);
   } catch (err) {
     console.info(err);

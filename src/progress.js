@@ -4,11 +4,10 @@ import MultiProgressBar from 'multi-progress';
 const progressBars = new MultiProgressBar();
 
 let progressPlaylist = null;
-let progressRecords = null;
 const progressVideos = {};
+const progressBatches = {};
 const displayTokens = { captions: 0 };
 const displayTokensVideo = {};
-const displayTokensRecords = { recordCount: 0 };
 const errors = [];
 
 /**
@@ -156,22 +155,23 @@ const Progress = {
   },
 
   algolia: {
-    onPushBefore(data) {
-      const recordCount = data.recordCount;
-      const max = data.chunkLength;
-      progressRecords = progressBars.newBar(
-        `[:bar] :recordCount/${recordCount}`,
+    onBatchStart(data) {
+      const uuid = data.uuid;
+      const max = data.chunkCount;
+      progressBatches[uuid] = progressBars.newBar(
+        `[${uuid} batch] [:bar] :current/:total`,
         {
           total: max,
           width: 30,
         }
       );
-      progressRecords.tick(0, displayTokensRecords);
     },
-    onPushChunk(chunkSize) {
-      displayTokensRecords.recordCount += chunkSize;
-      progressRecords.tick(1, displayTokensRecords);
+    onBatchChunk(uuid) {
+      progressBatches[uuid].tick();
     },
+    onBatchEnd() {
+      process.stdout.cursorTo(0, 10000);
+    }
   },
 };
 

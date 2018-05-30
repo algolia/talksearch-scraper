@@ -4,4 +4,4 @@
 jest \
   --watch \
   --no-watchman \
-  ./src
+  ./src ./configs
