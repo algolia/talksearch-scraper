@@ -5,8 +5,9 @@ jest.mock('./disk-logger');
 jest.mock('./fileutils');
 jest.mock('axios');
 const axios = require('axios');
-const anything = expect.anything();
 const objectContaining = expect.objectContaining;
+const anyString = expect.any(String);
+const anyObject = expect.any(Object);
 
 let current;
 
@@ -165,6 +166,33 @@ describe('youtube', () => {
       expect(actual[0]).toHaveProperty('video.id', 'foo');
       expect(actual[0]).toHaveProperty('video.positionInPlaylist', 42);
       expect(actual[0]).toHaveProperty('video.title', 'foo bar');
+    });
+
+    fit('should warn about videos without data', async () => {
+      const input = {
+        items: [
+          {
+            contentDetails: { videoId: 'foo', customInfo: 'bar' },
+          },
+          {
+            contentDetails: { videoId: 'bar' },
+          },
+        ],
+      };
+      mockGetVideosData.mockReturnValue({
+        bar: {
+          video: { id: 'bar' },
+        },
+      });
+
+      const mockWarning = jest.fn();
+      module.on('warning', mockWarning);
+
+      await current(input);
+
+      expect(mockWarning).toHaveBeenCalledWith(anyString, [
+        { contentDetails: { videoId: 'foo', customInfo: 'bar' } },
+      ]);
     });
   });
 
@@ -377,30 +405,30 @@ describe('youtube', () => {
     });
 
     it('sets the channel key to each video', async () => {
-      mockGet.mockReturnValue({ items: [{}] });
+      mockGet.mockReturnValue({ items: [{ id: 'foo' }] });
       mockFormatChannel.mockReturnValue('channel info');
 
       const actual = await current();
 
-      expect(actual[0]).toHaveProperty('channel', 'channel info');
+      expect(actual).toHaveProperty('foo.channel', 'channel info');
     });
 
     it('sets the video key to each video', async () => {
-      mockGet.mockReturnValue({ items: [{}] });
+      mockGet.mockReturnValue({ items: [{ id: 'foo' }] });
       mockFormatVideo.mockReturnValue('video info');
 
       const actual = await current();
 
-      expect(actual[0]).toHaveProperty('video', 'video info');
+      expect(actual).toHaveProperty('foo.video', 'video info');
     });
 
     it('sets the .captions key', async () => {
-      mockGet.mockReturnValue({ items: [{}] });
+      mockGet.mockReturnValue({ items: [{ id: 'foo' }] });
       mockGetCaptions.mockReturnValue('captions');
 
       const actual = await current();
 
-      expect(actual[0]).toHaveProperty('captions', 'captions');
+      expect(actual).toHaveProperty('foo.captions', 'captions');
     });
   });
 

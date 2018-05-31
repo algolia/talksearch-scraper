@@ -1,4 +1,5 @@
 import { forEach, map } from 'p-iteration';
+import pMap from 'p-map';
 import axios from 'axios';
 import _glob from 'glob';
 import dayjs from 'dayjs';
@@ -28,9 +29,12 @@ function init(argv) {
 }
 
 async function getVideos() {
+  const playlists = config.playlists;
   // Download YouTube data on disk
   if (!runOptions.useCache) {
-    await forEach(config.playlists, async playlistId => {
+    pulse.emit('crawling:start', { config, playlists });
+
+    await forEach(playlists, async playlistId => {
       const videos = await getVideosFromPlaylist(playlistId);
 
       await fileutils.writeJSON(
@@ -41,8 +45,12 @@ async function getVideos() {
   }
 
   // Read YouTube data from disk
-  const playlistFiles = await glob(`./cache/${config.indexName}/*.json`);
+  const playlistFiles = await glob(
+    `./cache/${config.indexName}/{${playlists.join(',')}}*.json`
+  );
   const videos = _.flatten(await map(playlistFiles, fileutils.readJSON));
+
+  pulse.emit('crawling:end', videos);
 
   return videos;
 }
@@ -58,9 +66,9 @@ async function getVideos() {
  **/
 async function getVideosFromPlaylist(playlistId) {
   try {
-    pulse.emit('playlist:get:start', playlistId);
     const resultsPerPage = 50;
 
+    const playlistData = await getPlaylistData(playlistId);
     let pageToken = null;
     let videos = [];
     let page = 1;
@@ -77,25 +85,31 @@ async function getVideosFromPlaylist(playlistId) {
         `playlistItems/${playlistId}-page-${page}.json`,
         pageItems
       );
-      pulse.emit('playlist:get:page', playlistId, {
-        max: _.get(pageItems, 'pageInfo.totalResults'),
-        increment: _.get(pageItems, 'items.length'),
-      });
+      if (page === 1) {
+        pulse.emit('playlist:start', {
+          playlistId,
+          totalVideoCount: _.get(pageItems, 'pageInfo.totalResults'),
+        });
+      }
 
-      videos = _.concat(videos, getVideosFromPlaylistPage(pageItems));
+      const pageVideos = await getVideosFromPlaylistPage(pageItems);
+      pulse.emit('playlist:chunk', {
+        playlistId,
+        chunkVideoCount: pageVideos.length,
+      });
+      videos = _.concat(videos, pageVideos);
 
       pageToken = pageItems.nextPageToken;
       page++;
     } while (pageToken);
 
     // Adding playlist information to all videos
-    const playlistData = await getPlaylistData(playlistId);
     videos = _.map(videos, video => ({
       ...video,
       playlist: playlistData,
     }));
 
-    pulse.emit('playlist:get:end', playlistId, videos);
+    pulse.emit('playlist:end', { config, videos });
 
     return videos;
   } catch (err) {
@@ -117,11 +131,11 @@ async function getVideosFromPlaylist(playlistId) {
  **/
 async function getVideosFromPlaylistPage(pageResults) {
   // Page results will give us the videoId and matching position in playlist
-  let videoInfoFromPage = {};
+  const allVideoInfoFromPage = {};
   _.each(pageResults.items, video => {
     const videoId = video.contentDetails.videoId;
-    const positionInPlaylist = video.snippet.positionInPlaylist;
-    videoInfoFromPage[videoId] = {
+    const positionInPlaylist = _.get(video, 'snippet.positionInPlaylist');
+    allVideoInfoFromPage[videoId] = {
       video: {
         id: videoId,
         positionInPlaylist,
@@ -130,13 +144,26 @@ async function getVideosFromPlaylistPage(pageResults) {
   });
 
   // We also need more detailed information about each video
-  const videoIds = _.values(videoInfoFromPage);
-  const videoDetails = await getVideosData(videoIds);
+  const videoPageIds = _.keys(allVideoInfoFromPage);
+  const videoDetails = await getVideosData(videoPageIds);
+
+  // If we don't have all the details for all video, we issue a warning
+  const videoDetailsIds = _.keys(videoDetails);
+  if (videoDetailsIds.length !== videoPageIds.length) {
+    const excludedIds = _.difference(videoPageIds, videoDetailsIds);
+    pulse.emit(
+      'warning',
+      'Unable to get details for the following videos',
+      _.map(excludedIds, id => `https://youtu.be/${id}`)
+    );
+  }
 
   // Discarding videos where we don't have any data and merging together
-  const videoDetailsIds = _.keys(videoDetails);
-  videoInfoFromPage = _.pick(videoInfoFromPage, videoDetailsIds);
-  const newVideos = _.values(_.merge(videoDetails, videoInfoFromPage));
+  const selectedVideoInfoFromPage = _.pick(
+    allVideoInfoFromPage,
+    videoDetailsIds
+  );
+  const newVideos = _.values(_.merge(videoDetails, selectedVideoInfoFromPage));
 
   return newVideos;
 }
@@ -248,7 +275,8 @@ function formatVideo(data, captions) {
  *
  * @param {Array.<String>} userVideoId The array of ids of the
  * video to get data from
- * @returns {Promise.<Object>} A list of all videos in a playlist
+ * @returns {Promise.<Object>} An object where each key is a video id and each
+ * value its detailed information
  **/
 async function getVideosData(userVideoId) {
   try {
@@ -260,9 +288,6 @@ async function getVideosData(userVideoId) {
       videoIds = [videoIds];
     }
 
-    forEach(videoIds, videoId => {
-      pulse.emit('video:data:start', videoId);
-    });
     const response = await get('videos', {
       id: videoIds.join(','),
       part: parts,
@@ -273,24 +298,19 @@ async function getVideosData(userVideoId) {
     );
 
     const items = _.get(response, 'items', []);
-    const videoData = await map(items, async data => {
-      pulse.emit('video:data:basic', data.id, data);
-
+    const videoData = {};
+    await pMap(items, async data => {
       const videoId = data.id;
       const captions = await getCaptions(videoId);
 
       const channelMetadata = formatChannel(data);
       const videoMetadata = formatVideo(data, captions);
 
-      return {
+      videoData[videoId] = {
         channel: channelMetadata,
         video: videoMetadata,
         captions,
       };
-    });
-
-    forEach(videoIds, (videoId, index) => {
-      pulse.emit('video:data:end', videoId, videoData[index]);
     });
 
     return videoData;
@@ -313,7 +333,6 @@ async function getVideosData(userVideoId) {
  **/
 async function getRawVideoInfo(videoId) {
   try {
-    pulse.emit('video:raw:start', videoId);
     /* eslint-disable camelcase */
     const options = {
       url: 'http://www.youtube.com/get_video_info',
@@ -333,7 +352,6 @@ async function getRawVideoInfo(videoId) {
     params.url_encoded_fmt_stream_map = qs.parse(
       params.url_encoded_fmt_stream_map
     );
-    pulse.emit('video:raw:end', params);
     diskLogger.write(`get_video_info/${videoId}.json`, params);
     return params;
   } catch (err) {
@@ -373,11 +391,9 @@ async function getCaptions(videoId) {
   try {
     const captionUrl = await getCaptionsUrl(videoId);
     if (!captionUrl) {
-      pulse.emit('video:error', videoId, 'No caption url');
       return [];
     }
 
-    pulse.emit('video:captions:start', videoId);
     const xml = await axios.get(captionUrl);
     diskLogger.write(`captions/${videoId}.xml`, xml.data);
 
@@ -395,13 +411,8 @@ async function getCaptions(videoId) {
       };
     });
 
-    pulse.emit('video:captions:end', videoId, captions);
-    if (captions.length === 0) {
-      pulse.emit('video:error', videoId, 'No captions found');
-    }
     return captions;
   } catch (err) {
-    pulse.emit('video:error', videoId, 'Error when getting captions');
     pulse.emit('error', err, `getCaptions(${videoId})`);
     return [];
   }
@@ -443,6 +454,7 @@ const Youtube = {
   // We expose those methods so we can test them. But we clearly mark them as
   // being internals, and not part of the public API
   internals: {
+    pulse,
     formatCaptions,
     formatPopularity,
     formatDuration,

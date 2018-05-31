@@ -2,177 +2,140 @@ import chalk from 'chalk';
 import _ from 'lodash';
 import MultiProgressBar from 'multi-progress';
 const progressBars = new MultiProgressBar();
+const allBars = {};
+const warnings = [];
 
-let progressPlaylist = null;
-const progressVideos = {};
-const progressBatches = {};
-const displayTokens = { captions: 0 };
-const displayTokensVideo = {};
-const errors = [];
-
-/**
- * Increment playlist progressbar by specified value
- *
- * @param {Number} value Value to increment. Usually the number of elements in
- * one page.
- * @returns {void}
- **/
-function tickPlaylist(value) {
-  progressPlaylist.tick(value, displayTokens);
-}
-/**
- * Refresh tge playlist progress bar without incrementing the bar
- *
- * @returns {void}
- **/
-function refreshPlaylist() {
-  tickPlaylist(0);
-}
-
-/**
- * Increment a video progressbar to the next step
- *
- * @param {String} videoId The unique ID of the video
- * @param {String} newTokens The new tokens to display in the bar
- * @returns {void}
- **/
-function tickVideo(videoId, newTokens) {
-  const tokens = {
-    ...displayTokensVideo[videoId],
-    ...newTokens,
-  };
-
-  progressVideos[videoId].tick(1, { ...tokens });
-
-  displayTokensVideo[videoId] = tokens;
-}
-
-/**
- * Refresh a video progressbar without going to the next step
- *
- * @param {String} videoId The unique ID of the video
- * @param {String} newTokens The new tokens to display in the bar
- * @returns {void}
- **/
-function refreshVideo(videoId, newTokens) {
-  const tokens = {
-    ...displayTokensVideo[videoId],
-    ...newTokens,
-  };
-
-  progressVideos[videoId].tick(0, { ...tokens });
-
-  displayTokensVideo[videoId] = tokens;
-}
-
-/**
- * Create the playlist progress bar
- *
- * @param {Number} max The maximum number of steps
- * @returns {void}
- **/
-function createPlaylistProgressBar(max) {
-  progressPlaylist = progressBars.newBar(
-    `[:bar] Videos: :current/:total Captions: :captions`,
-    {
-      total: max,
-      width: 30,
-    }
-  );
-  refreshPlaylist();
+function newBar(id, color, max) {
+  const name = chalk[color](id);
+  const bar = progressBars.newBar(`[${name}] [:bar] :current/:total`, {
+    width: 90,
+    total: max,
+  });
+  bar.tick(0);
+  allBars[id] = bar;
 }
 
 const Progress = {
-  displayErrors() {
-    process.stdout.cursorTo(0, 10000);
-    _.each(errors, error => {
-      console.info(chalk.red(error.title));
-      console.error(error.error);
-    });
+  youtube: {
+    onCrawlingStart(data) {
+      const name = data.config.indexName;
+      const total = data.playlists.length;
+      newBar(name, 'blue', total);
+    },
+    onCrawlingEnd(videos) {
+      process.stdout.cursorTo(0, 10000);
+      console.info(`${videos.length} videos found`);
+    },
+    onPlaylistStart(data) {
+      const playlistId = data.playlistId;
+      const totalVideoCount = data.totalVideoCount;
+      newBar(playlistId, 'green', totalVideoCount);
+    },
+    onPlaylistChunk(data) {
+      const playlistId = data.playlistId;
+      const chunkVideoCount = data.chunkVideoCount;
+      allBars[playlistId].tick(chunkVideoCount);
+    },
+    onPlaylistEnd(data) {
+      allBars[data.config.indexName].tick();
+    },
   },
-  onPlaylistGetPage(playlistId, pageInfo) {
-    // First call, we create the progress bar
-    if (!progressPlaylist) {
-      console.info(chalk.yellow(`Playlist ${playlistId}`));
-      createPlaylistProgressBar(pageInfo.max);
-    }
-
-    tickPlaylist(pageInfo.increment);
-  },
-
-  onPlaylistGetEnd() {
-    // Move cursor offscreen, it will force to put it at the lowest it can be
-    process.stdout.cursorTo(0, 10000);
-
-    if (errors.length === 0) {
-      console.info(chalk.bold.green('\n✔ All done'));
-    }
-  },
-
-  onVideoDataStart(videoId) {
-    const id = chalk.green(videoId);
-    progressVideos[videoId] = progressBars.newBar(`[${id}] :name :details`, {
-      total: 2,
-      width: 10,
-      complete: chalk.green('.'),
-      incomplete: chalk.grey('.'),
-    });
-    displayTokensVideo[videoId] = { name: '???' };
-    refreshVideo(videoId, {
-      details: chalk.white('Getting basic informations'),
-    });
-  },
-
-  onVideoDataBasic(videoId, data) {
-    refreshVideo(videoId, { name: chalk.blue(data.snippet.title) });
-  },
-
-  onVideoCaptionsStart(videoId) {
-    refreshVideo(videoId, { details: chalk.white('Getting captions') });
-  },
-
-  onVideoRawStart(videoId) {
-    refreshVideo(videoId, { details: chalk.white('Getting raw data') });
-  },
-
-  onVideoDataEnd(videoId, data) {
-    const captionsCount = data.captions.length;
-    displayTokens.captions += captionsCount;
-    if (captionsCount > 0) {
-      refreshPlaylist();
-      refreshVideo(videoId, {
-        details: chalk.green(`✔ Done (${captionsCount} captions)`),
-      });
-    }
-  },
-
-  onVideoError(videoId, errorMessage) {
-    refreshVideo(videoId, { details: chalk.red(`✘ ${errorMessage}`) });
-  },
-
-  onError(error, title) {
-    errors.push({ error, title });
-  },
-
   algolia: {
     onBatchStart(data) {
-      const uuid = data.uuid;
-      const max = data.chunkCount;
-      progressBatches[uuid] = progressBars.newBar(
-        `[${uuid} batch] [:bar] :current/:total`,
+      const progressName = chalk.green(data.uuid);
+      const chunkCount = data.chunkCount;
+      allBars[data.uuid] = progressBars.newBar(
+        `[${progressName}] [:bar] :current/:total`,
         {
-          total: max,
-          width: 30,
+          total: chunkCount,
+          width: 70,
         }
       );
     },
     onBatchChunk(uuid) {
-      progressBatches[uuid].tick();
+      allBars[uuid].tick();
     },
     onBatchEnd() {
       process.stdout.cursorTo(0, 10000);
-    }
+    },
   },
+  onError(error, title) {
+    console.info(chalk.red(title));
+    console.error(error);
+  },
+  onWarning(title, details) {
+    warnings.push({ title, details });
+  },
+  displayWarnings() {
+    process.stdout.cursorTo(0, 10000);
+    const groupedWarnings = _.groupBy(warnings, 'title');
+    _.each(groupedWarnings, (typedWarnings, title) => {
+      console.info(chalk.red(title));
+
+      const displayedResult = _.flatten(_.map(typedWarnings, 'details')).join(
+        '\n'
+      );
+
+      console.info(chalk.yellow(displayedResult));
+    });
+  },
+  // onPlaylistGetPage(playlistId, pageInfo) {
+  //   // First call, we create the progress bar
+  //   if (!progressPlaylist) {
+  //     console.info(chalk.yellow(`Playlist ${playlistId}`));
+  //     createPlaylistProgressBar(pageInfo.max);
+  //   }
+
+  //   tickPlaylist(pageInfo.increment);
+  // },
+  // onPlaylistGetEnd() {
+  //   // Move cursor offscreen, it will force to put it at the lowest it can be
+  //   process.stdout.cursorTo(0, 10000);
+
+  //   if (errors.length === 0) {
+  //     console.info(chalk.bold.green('\n✔ All done'));
+  //   }
+  // },
+  // onVideoDataStart(videoId) {
+  //   const id = chalk.green(videoId);
+  //   progressVideos[videoId] = progressBars.newBar(`[${id}] :name :details`, {
+  //     total: 2,
+  //     width: 10,
+  //     complete: chalk.green('.'),
+  //     incomplete: chalk.grey('.'),
+  //   });
+  //   displayTokensVideo[videoId] = { name: '???' };
+  //   refreshVideo(videoId, {
+  //     details: chalk.white('Getting basic informations'),
+  //   });
+  // },
+
+  // onVideoDataBasic(videoId, data) {
+  //   refreshVideo(videoId, { name: chalk.blue(data.snippet.title) });
+  // },
+
+  // onVideoCaptionsStart(videoId) {
+  //   refreshVideo(videoId, { details: chalk.white('Getting captions') });
+  // },
+
+  // onVideoRawStart(videoId) {
+  //   refreshVideo(videoId, { details: chalk.white('Getting raw data') });
+  // },
+
+  // onVideoDataEnd(videoId, data) {
+  //   const captionsCount = data.captions.length;
+  //   displayTokens.captions += captionsCount;
+  //   if (captionsCount > 0) {
+  //     refreshPlaylist();
+  //     refreshVideo(videoId, {
+  //       details: chalk.green(`✔ Done (${captionsCount} captions)`),
+  //     });
+  //   }
+  // },
+
+  // onVideoError(videoId, errorMessage) {
+  //   refreshVideo(videoId, { details: chalk.red(`✘ ${errorMessage}`) });
+  // },
 };
 
 export default Progress;

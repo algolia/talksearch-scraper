@@ -5,15 +5,23 @@ import algolia from '../src/algolia';
 import yargs from 'yargs';
 
 // Progress bar display
-youtube.on('playlist:get:page', progress.onPlaylistGetPage);
-youtube.on('playlist:get:end', progress.onPlaylistGetEnd);
-youtube.on('video:data:start', progress.onVideoDataStart);
-youtube.on('video:data:basic', progress.onVideoDataBasic);
-youtube.on('video:data:end', progress.onVideoDataEnd);
-youtube.on('video:captions:start', progress.onVideoCaptionsStart);
-youtube.on('video:raw:start', progress.onVideoRawStart);
-youtube.on('video:error', progress.onVideoError);
+youtube.on('crawling:start', progress.youtube.onCrawlingStart);
+youtube.on('crawling:end', progress.youtube.onCrawlingEnd);
+youtube.on('playlist:start', progress.youtube.onPlaylistStart);
+youtube.on('playlist:chunk', progress.youtube.onPlaylistChunk);
+youtube.on('playlist:end', progress.youtube.onPlaylistEnd);
 youtube.on('error', progress.onError);
+youtube.on('warning', progress.onWarning);
+// youtube.on('video:end', progress.youtube.onVideoEnd);
+// youtube.on('playlist:end', progress.youtube.onPlaylistEnd);
+// youtube.on('playlist:get:page', progress.onPlaylistGetPage);
+// youtube.on('playlist:get:end', progress.onPlaylistGetEnd);
+// youtube.on('video:data:start', progress.onVideoDataStart);
+// youtube.on('video:data:basic', progress.onVideoDataBasic);
+// youtube.on('video:data:end', progress.onVideoDataEnd);
+// youtube.on('video:captions:start', progress.onVideoCaptionsStart);
+// youtube.on('video:raw:start', progress.onVideoRawStart);
+// youtube.on('video:error', progress.onVideoError);
 
 algolia.on('batch:start', progress.algolia.onBatchStart);
 algolia.on('batch:chunk', progress.algolia.onBatchChunk);
@@ -58,15 +66,15 @@ const argv = yargs
     transformer.init(argv);
 
     const videos = await youtube.getVideos();
-    progress.displayErrors();
-    console.info(`${videos.length} videos found`);
+    progress.displayWarnings();
 
-    // Transform videos in records
-    const records = transformer.run(videos);
-    console.info(`${records.length} records generated`);
+    // // Transform videos in records
+    // const records = transformer.run(videos);
+    // console.info(videos);
+    // console.info(`${records.length} records generated`);
 
-    // Push records
-    await algolia.run(records);
+    // // Push records
+    // await algolia.run(records);
   } catch (err) {
     console.info(err);
   }
