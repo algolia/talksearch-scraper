@@ -56,13 +56,19 @@ const Transformer = {
 
   recordsFromVideo(video) {
     const hashObject = nodeObjectHash().hash;
+
     const videoData = { ...video.video };
     _.set(videoData, 'popularity.score', getPopularityScore(videoData));
-    _.set(
-      videoData,
-      'publishedDate',
-      getBucketedDate(videoData.publishedDate)
-    );
+    _.set(videoData, 'publishedDate', getBucketedDate(videoData.publishedDate));
+    let baseRecord = {
+      video: videoData,
+      playlist: video.playlist,
+      channel: video.channel,
+    };
+    // Transform the record with custom transformData from the config
+    if (_.get(this, 'config.transformData')) {
+      baseRecord = this.config.transformData(baseRecord);
+    }
 
     // Group captions two by two, so each record is two lines of captions
     return mapPairSlide(video.captions, (first, second = {}, position) => {
@@ -70,22 +76,15 @@ const Transformer = {
       const start = first.start;
       const duration = _.round(_.sum([first.duration, second.duration]), 2);
 
-      let record = {
+      const record = {
+        ...baseRecord,
         caption: {
           content,
           start,
           duration,
           position,
         },
-        video: videoData,
-        playlist: video.playlist,
-        channel: video.channel,
       };
-
-      // Transform the record with custom transformData from the config
-      if (_.get(this, 'config.transformData')) {
-        record = this.config.transformData(record);
-      }
 
       // Set a unique objectID to identify the record
       record.objectID = hashObject(record);

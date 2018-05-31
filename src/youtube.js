@@ -24,7 +24,7 @@ function init(argv) {
   };
   config = require(`../configs/${argv.config}.js`);
 
-  diskLogger.enabled = argv.log;
+  diskLogger.enabled = argv.logs;
 }
 
 async function getVideos() {
@@ -61,8 +61,6 @@ async function getVideosFromPlaylist(playlistId) {
     pulse.emit('playlist:get:start', playlistId);
     const resultsPerPage = 50;
 
-    const playlistData = await getPlaylistData(playlistId);
-
     let pageToken = null;
     let videos = [];
     let page = 1;
@@ -80,35 +78,22 @@ async function getVideosFromPlaylist(playlistId) {
         pageItems
       );
       pulse.emit('playlist:get:page', playlistId, {
-        max: pageItems.pageInfo.totalResults,
-        increment: pageItems.items.length,
+        max: _.get(pageItems, 'pageInfo.totalResults'),
+        increment: _.get(pageItems, 'items.length'),
       });
 
-      // Base info about videos in playlist
-      const baseInfo = pageItems.items.map(video => ({
-        video: {
-          id: video.contentDetails.videoId,
-          positionInPlaylist: video.snippet.position,
-        },
-        playlist: playlistData,
-      }));
-      // Advanced info about each video
-      const advancedInfo = await getVideoData(_.map(baseInfo, 'video.id'));
-
-      // Merging the two
-      const newVideos = _.values(
-        _.merge(
-          _.keyBy(baseInfo, 'video.id'),
-          _.keyBy(advancedInfo, 'video.id')
-        )
-      );
-
-      // Update the generic list
-      videos = videos.concat(newVideos);
+      videos = _.concat(videos, getVideosFromPlaylistPage(pageItems));
 
       pageToken = pageItems.nextPageToken;
       page++;
     } while (pageToken);
+
+    // Adding playlist information to all videos
+    const playlistData = await getPlaylistData(playlistId);
+    videos = _.map(videos, video => ({
+      ...video,
+      playlist: playlistData,
+    }));
 
     pulse.emit('playlist:get:end', playlistId, videos);
 
@@ -117,6 +102,43 @@ async function getVideosFromPlaylist(playlistId) {
     pulse.emit('error', err, `getVideosFromPlaylist(${playlistId})`);
     return [];
   }
+}
+
+/**
+ * Given a playlist page, returns the list of videos of this page, along with
+ * their details
+ * @param {Object} pageResults The playlist page, as returned by the
+ *  /playlistItems endpoint
+ * @returns {Promise.<Array>} An array of all videos, along with details
+ *
+ * Note that some videos returned by the playlistItems might be private. In that
+ * case, we won't get any additional data for those videos, so we'll remove them
+ * from the returned videos.
+ **/
+async function getVideosFromPlaylistPage(pageResults) {
+  // Page results will give us the videoId and matching position in playlist
+  let videoInfoFromPage = {};
+  _.each(pageResults.items, video => {
+    const videoId = video.contentDetails.videoId;
+    const positionInPlaylist = video.snippet.positionInPlaylist;
+    videoInfoFromPage[videoId] = {
+      video: {
+        id: videoId,
+        positionInPlaylist,
+      },
+    };
+  });
+
+  // We also need more detailed information about each video
+  const videoIds = _.values(videoInfoFromPage);
+  const videoDetails = await getVideosData(videoIds);
+
+  // Discarding videos where we don't have any data and merging together
+  const videoDetailsIds = _.keys(videoDetails);
+  videoInfoFromPage = _.pick(videoInfoFromPage, videoDetailsIds);
+  const newVideos = _.values(_.merge(videoDetails, videoInfoFromPage));
+
+  return newVideos;
 }
 
 /**
@@ -146,22 +168,95 @@ async function getPlaylistData(playlistId) {
 }
 
 /**
+ * Extract hasCaptions and hasManualCaptions from the data received from the
+ * API.
+ * @param {Object} data Video data object as received by the API
+ * @param {Array} captions The array of captions
+ * @return {Object} Object containing boolean keys .hasCaptions and
+ * .hasManualCaptions
+ **/
+function formatCaptions(data, captions) {
+  const hasCaptions = captions.length > 0;
+  const hasManualCaptions = _.get(data, 'contentDetails.caption') === 'true';
+  return { hasCaptions, hasManualCaptions };
+}
+
+/**
+ * Format the statistics as returned by the API into an object
+ * @param {Object} data Video data object as received by the API
+ * @return {Object} Object containing .views, .likes, .dislikes, .favorites,
+ * .comments counts as numbers
+ **/
+function formatPopularity(data) {
+  const viewCount = _.parseInt(_.get(data, 'statistics.viewCount'));
+  const likeCount = _.parseInt(_.get(data, 'statistics.likeCount'));
+  const dislikeCount = _.parseInt(_.get(data, 'statistics.dislikeCount'));
+  const favoriteCount = _.parseInt(_.get(data, 'statistics.favoriteCount'));
+  const commentCount = _.parseInt(_.get(data, 'statistics.commentCount'));
+  return {
+    views: viewCount,
+    likes: likeCount,
+    dislikes: dislikeCount,
+    favorites: favoriteCount,
+    comments: commentCount,
+  };
+}
+
+/**
+ * Format the duration as returned by the API into an object
+ * @param {Object} data Video data object as received by the API
+ * @return {Object} Object containing a .minutes and .seconds keys
+ **/
+function formatDuration(data) {
+  const durationInSeconds =
+    parseIsoDuration(_.get(data, 'contentDetails.duration')) / 1000;
+  return {
+    minutes: Math.floor(durationInSeconds / 60),
+    seconds: durationInSeconds % 60,
+  };
+}
+
+function formatChannel(data) {
+  return {
+    id: _.get(data, 'snippet.channelId'),
+    title: _.get(data, 'snippet.channelTitle'),
+  };
+}
+
+function formatVideo(data, captions) {
+  const videoId = data.id;
+  const captionsMetadata = formatCaptions(data, captions);
+  const popularity = formatPopularity(data);
+  const duration = formatDuration(data);
+  const publishedDate = dayjs(_.get(data, 'snippet.publishedAt')).unix();
+
+  return {
+    id: videoId,
+    title: _.get(data, 'snippet.title'),
+    description: _.get(data, 'snippet.description'),
+    thumbnails: _.get(data, 'snippet.thumbnails'),
+    language: _.get(data, 'snippet.defaultAudioLanguage'),
+    publishedDate,
+    popularity,
+    duration,
+    ...captionsMetadata,
+  };
+}
+
+/**
  * Returns details about specific videos
  *
- * @param {String|Array.<String>} userVideoId The id (or array of ids) of the
+ * @param {Array.<String>} userVideoId The array of ids of the
  * video to get data from
  * @returns {Promise.<Object>} A list of all videos in a playlist
- * TOTEST
  **/
-async function getVideoData(userVideoId) {
+async function getVideosData(userVideoId) {
   try {
     const parts = ['contentDetails', 'snippet', 'statistics', 'status'].join(
       ','
     );
-    // Allow for either one or several ids
     let videoIds = userVideoId;
-    const onlyOneVideoId = !_.isArray(videoIds);
-    if (onlyOneVideoId) {
+    if (!_.isArray(videoIds)) {
       videoIds = [videoIds];
     }
 
@@ -177,49 +272,19 @@ async function getVideoData(userVideoId) {
       response
     );
 
-    const videoData = await map(response.items, async data => {
+    const items = _.get(response, 'items', []);
+    const videoData = await map(items, async data => {
       pulse.emit('video:data:basic', data.id, data);
 
       const videoId = data.id;
       const captions = await getCaptions(videoId);
-      const hasCaptions = captions.length > 0;
-      const hasManualCaptions = data.contentDetails.caption === 'true';
-      const publishedDate = dayjs(data.snippet.publishedAt).unix();
-      const viewCount = _.parseInt(data.statistics.viewCount);
-      const likeCount = _.parseInt(data.statistics.likeCount);
-      const dislikeCount = _.parseInt(data.statistics.dislikeCount);
-      const favoriteCount = _.parseInt(data.statistics.favoriteCount);
-      const commentCount = _.parseInt(data.statistics.commentCount);
-      const durationInSeconds =
-        parseIsoDuration(data.contentDetails.duration) / 1000;
-      const duration = {
-        minutes: Math.floor(durationInSeconds / 60),
-        seconds: durationInSeconds % 60,
-      };
+
+      const channelMetadata = formatChannel(data);
+      const videoMetadata = formatVideo(data, captions);
 
       return {
-        channel: {
-          id: data.snippet.channelId,
-          title: data.snippet.channelTitle,
-        },
-        video: {
-          id: videoId,
-          title: data.snippet.title,
-          description: data.snippet.description,
-          publishedDate,
-          thumbnails: data.snippet.thumbnails,
-          hasCaptions,
-          hasManualCaptions,
-          language: data.snippet.defaultAudioLanguage,
-          popularity: {
-            views: viewCount,
-            likes: likeCount,
-            dislikes: dislikeCount,
-            favorites: favoriteCount,
-            comments: commentCount,
-          },
-          duration,
-        },
+        channel: channelMetadata,
+        video: videoMetadata,
         captions,
       };
     });
@@ -228,13 +293,9 @@ async function getVideoData(userVideoId) {
       pulse.emit('video:data:end', videoId, videoData[index]);
     });
 
-    // Return only data if only one id passed initially
-    if (onlyOneVideoId) {
-      return videoData[0];
-    }
     return videoData;
   } catch (err) {
-    pulse.emit('error', err, `getVideoData(${userVideoId})`);
+    pulse.emit('error', err, `getVideosData(${userVideoId})`);
     return {};
   }
 }
@@ -382,9 +443,16 @@ const Youtube = {
   // We expose those methods so we can test them. But we clearly mark them as
   // being internals, and not part of the public API
   internals: {
+    formatCaptions,
+    formatPopularity,
+    formatDuration,
+    formatChannel,
+    formatVideo,
     getCaptionsUrl,
     getCaptions,
     getPlaylistData,
+    getVideosData,
+    getVideosFromPlaylistPage,
     getVideosFromPlaylist,
   },
 };

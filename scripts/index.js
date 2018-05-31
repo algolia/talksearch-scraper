@@ -43,7 +43,7 @@ const argv = yargs
       describe: 'Use the existing disk cache instead of requesting YouTube',
       default: false,
     },
-    log: {
+    logs: {
       describe: 'Save HTTP call results to disk',
       default: false,
     },
