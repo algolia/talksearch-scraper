@@ -191,7 +191,7 @@ describe('youtube', () => {
       await current(input);
 
       expect(mockWarning).toHaveBeenCalledWith(anyString, [
-        { contentDetails: { videoId: 'foo', customInfo: 'bar' } },
+        'https://youtu.be/foo',
       ]);
     });
   });

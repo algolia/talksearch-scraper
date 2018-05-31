@@ -55,15 +55,15 @@ describe('transform', () => {
       expect(actual[0]).toHaveProperty('caption.duration', 11.1);
     });
 
-    it('sets the start to the start of the first caption', () => {
+    it('sets the start to the start of the first caption (rounded to the second)', () => {
       const input = {
-        captions: [{ start: 3 }, { start: 5 }, { start: 7 }],
+        captions: [{ start: 3.2 }, { start: 5.6 }, { start: 7.3 }],
       };
 
       const actual = current(input);
 
       expect(actual[0]).toHaveProperty('caption.start', 3);
-      expect(actual[1]).toHaveProperty('caption.start', 5);
+      expect(actual[1]).toHaveProperty('caption.start', 6);
       expect(actual[2]).toHaveProperty('caption.start', 7);
     });
 

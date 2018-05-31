@@ -73,7 +73,7 @@ const Transformer = {
     // Group captions two by two, so each record is two lines of captions
     return mapPairSlide(video.captions, (first, second = {}, position) => {
       const content = [first.content, second.content].join(' ');
-      const start = first.start;
+      const start = _.round(first.start);
       const duration = _.round(_.sum([first.duration, second.duration]), 2);
 
       const record = {
