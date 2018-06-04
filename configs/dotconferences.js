@@ -35,14 +35,23 @@ module.exports = {
     'PLMW8Xq7bXrG7XGG29sXso2hYYNW_14s_A', // dotScale 2013
   ],
   transformData(record) {
-    const rawTitle = _.get(record, 'video.title');
-    const [alpha, authorName, title] = rawTitle.split(' - ');
-    const [conferenceName, conferenceYear] = alpha.split(' ');
-
+    // Finding conference and year from playlist name
+    const playlistName = _.get(record, 'playlist.title', '');
+    const [conferenceName, conferenceYear] = playlistName.split(' ');
     _.set(record, 'conference.name', conferenceName);
     _.set(record, 'conference.year', _.parseInt(conferenceYear));
-    _.set(record, 'author.name', authorName);
-    _.set(record, 'video.title', title);
+
+    // Most titles follow a "dotJS 2013 - Remy Sharp - iframe abuse" pattern
+    const rawTitle = _.get(record, 'video.title');
+    const pattern = /.* - (.*) - (.*)/;
+    if (pattern.test(rawTitle)) {
+      const matches = rawTitle.match(pattern);
+      const authorName = matches[1];
+      const videoTitle = matches[2];
+
+      _.set(record, 'author.name', authorName);
+      _.set(record, 'video.title', videoTitle);
+    }
 
     return record;
   },
