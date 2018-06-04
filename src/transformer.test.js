@@ -12,14 +12,78 @@ let current;
 describe('transform', () => {
   beforeEach(helper.globalBeforeEach);
 
-  describe('recordsFromVideo', () => {
+  describe('getCaptionDetails', () => {
     beforeEach(() => {
-      current = module.recordsFromVideo;
+      current = module.internals.getCaptionDetails;
+    });
+
+    it('should set the starting second', () => {
+      const input = { start: 5.7 };
+
+      const actual = current(input);
+
+      expect(actual).toHaveProperty('start', 5);
+    });
+
+    it('should set the duration', () => {
+      const input = { duration: 4.86001 };
+
+      const actual = current(input);
+
+      expect(actual).toHaveProperty('duration', 4.86);
+    });
+
+    it('should set the content', () => {
+      const input = { content: 'foo' };
+
+      const actual = current(input);
+
+      expect(actual).toHaveProperty('content', 'foo');
+    });
+
+    it('should set the position', () => {
+      const input = {};
+
+      const actual = current(input, 42);
+
+      expect(actual).toHaveProperty('position', 42);
+    });
+
+    it('should set the url', () => {
+      const caption = { start: 5.86 };
+      const videoId = 'foo';
+
+      const actual = current(caption, 42, videoId);
+
+      expect(actual).toHaveProperty(
+        'url',
+        'https://www.youtube.com/watch?v=foo&t=5s'
+      );
+    });
+
+    it('should return undefined if no input caption', () => {
+      const caption = undefined;
+
+      const actual = current(caption);
+
+      expect(actual).toEqual(undefined);
+    });
+  });
+
+  describe('recordsFromVideo', () => {
+    let mockGetCaptionDetails;
+    let mockGetPopularityScore;
+    let mockGetBucketedDate;
+    beforeEach(() => {
+      current = module.internals.recordsFromVideo;
+      mockGetCaptionDetails = helper.mockPrivate(module, 'getCaptionDetails');
+      mockGetPopularityScore = helper.mockPrivate(module, 'getPopularityScore');
+      mockGetBucketedDate = helper.mockPrivate(module, 'getBucketedDate');
     });
 
     it('get one record per caption', () => {
       const input = {
-        captions: [{ content: 'foo bar' }, { content: 'bar baz' }],
+        captions: [{ content: 'foo' }, { content: 'bar' }],
       };
 
       const actual = current(input);
@@ -27,12 +91,22 @@ describe('transform', () => {
       expect(actual).toHaveLength(2);
     });
 
+    it('sets the caption details', () => {
+      mockGetCaptionDetails.mockReturnValue({ content: 'bar' });
+      const input = {
+        captions: [{ content: 'foo' }],
+      };
+
+      const actual = current(input);
+
+      expect(actual[0]).toHaveProperty('caption.content', 'bar');
+    });
+
     it('contains the video, playlist and channel info', () => {
       const input = {
         video: { id: 'foo' },
         playlist: { id: 'bar' },
         channel: { id: 'baz' },
-        captions: [{ content: 'foo bar' }],
       };
 
       const actual = current(input);
@@ -42,61 +116,17 @@ describe('transform', () => {
       expect(actual[0]).toHaveProperty('channel.id', 'baz');
     });
 
-    it('contains aggregated duration', () => {
-      const input = {
-        captions: [
-          { content: 'foo bar', duration: 4.86 },
-          { content: 'bar baz', duration: 6.24 },
-        ],
-      };
+    it('still create a record if no captions', () => {
+      const input = { video: { id: 'foo' } };
 
       const actual = current(input);
 
-      expect(actual[0]).toHaveProperty('caption.duration', 11.1);
-    });
-
-    it('sets the start to the start of the first caption (rounded to the second)', () => {
-      const input = {
-        captions: [{ start: 3.2 }, { start: 5.6 }, { start: 7.3 }],
-      };
-
-      const actual = current(input);
-
-      expect(actual[0]).toHaveProperty('caption.start', 3);
-      expect(actual[1]).toHaveProperty('caption.start', 5);
-      expect(actual[2]).toHaveProperty('caption.start', 7);
-    });
-
-    it('adds the caption position', () => {
-      const input = {
-        captions: [{ content: 'foo' }, { content: 'bar' }, { content: 'baz' }],
-      };
-
-      const actual = current(input);
-
-      expect(actual[0]).toHaveProperty('caption.position', 0);
-      expect(actual[1]).toHaveProperty('caption.position', 1);
-      expect(actual[2]).toHaveProperty('caption.position', 2);
-    });
-
-    it('adds the caption url', () => {
-      const input = {
-        video: { id: 'foo' },
-        captions: [{ content: 'foo', start: 12.76 }],
-      };
-
-      const actual = current(input);
-
-      expect(actual[0]).toHaveProperty(
-        'caption.url',
-        'https://www.youtube.com/watch?v=foo&t=12s'
-      );
+      expect(actual).toHaveLength(1);
+      expect(actual[0]).toHaveProperty('video.id', 'foo');
     });
 
     it('adds a unique objectID', () => {
-      const input = {
-        captions: [{ content: 'foo' }, { content: 'bar' }],
-      };
+      const input = { video: { id: 'foo' } };
 
       mockHashObject.mockReturnValue('uuid');
 
@@ -106,21 +136,22 @@ describe('transform', () => {
     });
 
     it('set the popularity score to each record', () => {
-      const input = {
-        video: {
-          popularity: {
-            like: 10,
-            dislike: 1,
-            view: 100,
-          },
-        },
-        captions: [{ content: 'foo' }, { content: 'bar' }],
-      };
+      mockGetPopularityScore.mockReturnValue(1234);
+      const input = { video: { id: 'foo' } };
 
       const actual = current(input);
 
-      expect(actual[0]).toHaveProperty('video.popularity.score', 111);
-      expect(actual[1]).toHaveProperty('video.popularity.score', 111);
+      expect(actual[0]).toHaveProperty('video.popularity.score', 1234);
+    });
+
+    it('set the bucketed published date  score to each record', () => {
+      mockGetBucketedDate.mockReturnValue({ day: 1, year: 4 });
+      const input = { video: { id: 'foo' } };
+
+      const actual = current(input);
+
+      expect(actual[0]).toHaveProperty('video.publishedDate.day', 1);
+      expect(actual[0]).toHaveProperty('video.publishedDate.year', 4);
     });
   });
 

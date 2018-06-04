@@ -15,6 +15,12 @@ function newBar(id, color, max) {
   allBars[id] = bar;
 }
 
+function updateCursor() {
+  if (process.stdout.cursorTo) {
+    process.stdout.cursorTo(0, 10000);
+  }
+}
+
 const Progress = {
   youtube: {
     onCrawlingStart(data) {
@@ -23,7 +29,7 @@ const Progress = {
       newBar(name, 'blue', total);
     },
     onCrawlingEnd(videos) {
-      process.stdout.cursorTo(0, 10000);
+      updateCursor();
       console.info(`${videos.length} videos found`);
     },
     onPlaylistStart(data) {
@@ -56,7 +62,7 @@ const Progress = {
       allBars[uuid].tick();
     },
     onBatchEnd() {
-      process.stdout.cursorTo(0, 10000);
+      updateCursor();
     },
   },
   onError(error, title) {
@@ -67,7 +73,7 @@ const Progress = {
     warnings.push({ title, details });
   },
   displayWarnings() {
-    process.stdout.cursorTo(0, 10000);
+    updateCursor();
     const groupedWarnings = _.groupBy(warnings, 'title');
     _.each(groupedWarnings, (typedWarnings, title) => {
       console.info(chalk.red(title));

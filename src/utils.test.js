@@ -89,5 +89,14 @@ describe('utils', () => {
 
       expect(actual).toEqual([3, 6, 9, 7]);
     });
+
+    it('calls it once if array is empty', () => {
+      const input = [];
+      const method = jest.fn();
+
+      current(input, method);
+
+      expect(method).toHaveBeenCalledTimes(1);
+    });
   });
 });

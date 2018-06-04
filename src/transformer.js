@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import dayjs from 'dayjs';
 import nodeObjectHash from 'node-object-hash';
-import { mapPairSlide } from './utils';
+let config;
 
 /**
  * Compute a value for ranking based on the various popularity metrics.
@@ -38,67 +38,87 @@ function getBucketedDate(timestamp) {
   };
 }
 
-const Transformer = {
-  config: {},
+function getCaptionDetails(caption, position, videoId) {
+  if (caption === undefined) {
+    return undefined;
+  }
 
+  const content = caption.content;
+  const duration = _.round(caption.duration, 2);
+  const start = _.floor(caption.start);
+  const url = `https://www.youtube.com/watch?v=${videoId}&t=${start}s`;
+
+  return {
+    content,
+    duration,
+    start,
+    position,
+    url,
+  };
+}
+
+function recordsFromVideo(video) {
+  const hashObject = nodeObjectHash().hash;
+
+  // Enhanced video data
+  const videoDetails = { ...video.video };
+  _.set(videoDetails, 'popularity.score', getPopularityScore(videoDetails));
+  _.set(
+    videoDetails,
+    'publishedDate',
+    getBucketedDate(videoDetails.publishedDate)
+  );
+
+  // Base record metadata to add to all records
+  let baseRecord = {
+    video: videoDetails,
+    playlist: video.playlist,
+    channel: video.channel,
+  };
+
+  // Config specific updates
+  if (_.get(config, 'transformData')) {
+    baseRecord = config.transformData(baseRecord);
+  }
+
+  // One record per caption, with a minimum of 1 even if no captions
+  let captions = _.get(video, 'captions');
+  if (_.isEmpty(captions)) {
+    captions = [undefined];
+  }
+
+  return _.map(captions, (caption, position) => {
+    const videoId = baseRecord.video.id;
+    const captionDetails = getCaptionDetails(caption, position, videoId);
+    const record = {
+      ...baseRecord,
+      caption: captionDetails,
+    };
+
+    record.objectID = hashObject(record);
+    return record;
+  });
+}
+
+const Transformer = {
   init(argv) {
-    this.config = require(`../configs/${argv.config}.js`);
+    config = require(`../configs/${argv.config}.js`);
   },
 
   run(videos) {
     let records = [];
     _.each(videos, video => {
-      records = _.concat(records, this.recordsFromVideo(video));
+      records = _.concat(records, recordsFromVideo(video));
     });
 
     return records;
   },
 
-  recordsFromVideo(video) {
-    const hashObject = nodeObjectHash().hash;
-
-    const videoData = { ...video.video };
-    const videoId = videoData.id;
-    _.set(videoData, 'popularity.score', getPopularityScore(videoData));
-    _.set(videoData, 'publishedDate', getBucketedDate(videoData.publishedDate));
-    let baseRecord = {
-      video: videoData,
-      playlist: video.playlist,
-      channel: video.channel,
-    };
-    // Transform the record with custom transformData from the config
-    if (_.get(this, 'config.transformData')) {
-      baseRecord = this.config.transformData(baseRecord);
-    }
-
-    // Group captions two by two, so each record is two lines of captions
-    return mapPairSlide(video.captions, (first, second = {}, position) => {
-      const content = [first.content, second.content].join(' ');
-      const duration = _.round(_.sum([first.duration, second.duration]), 2);
-      const start = _.floor(first.start);
-      const url = `https://www.youtube.com/watch?v=${videoId}&t=${start}s`;
-
-      const record = {
-        ...baseRecord,
-        caption: {
-          content,
-          start,
-          duration,
-          position,
-          url,
-        },
-      };
-
-      // Set a unique objectID to identify the record
-      record.objectID = hashObject(record);
-
-      return record;
-    });
-  },
-
   internals: {
-    getPopularityScore,
     getBucketedDate,
+    getPopularityScore,
+    getCaptionDetails,
+    recordsFromVideo,
   },
 };
 

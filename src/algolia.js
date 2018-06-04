@@ -138,7 +138,6 @@ async function copyIndexSync(source, destination) {
   console.info(`Copy ${source} to ${destination}`);
   try {
     const response = await client.copyIndex(source, destination);
-    console.info(response);
     await indexes[source].waitTask(response.taskID);
   } catch (err) {
     errorHandler(err, `Unable to copy index ${source} to ${destination}`);
@@ -222,7 +221,7 @@ async function runBatchSync(batches, userOptions = {}) {
   };
   const chunks = _.chunk(batches, options.batchSize);
   console.info(
-    `Pushing ${batches.length} batches in groups of ${options.batchSize}`
+    `Pushing ${batches.length} operations in batches of ${options.batchSize}`
   );
   pulse.emit('batch:start', { uuid: options.uuid, chunkCount: chunks.length });
 

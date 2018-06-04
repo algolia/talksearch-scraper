@@ -68,6 +68,9 @@ function eachPairSlide(collection, method) {
  * @returns {Array} An array of each pair of element passed through method
  **/
 function mapPairSlide(collection, method) {
+  if (_.isEmpty(collection)) {
+    return [method()];
+  }
   return _.map(collection, (item, i) =>
     method(collection[i], collection[i + 1], i)
   );
