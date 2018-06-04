@@ -45,8 +45,14 @@ async function getVideos() {
   }
 
   // Read YouTube data from disk
+  let playlistGlob;
+  if (playlists.length === 1) {
+    playlistGlob = `${playlists[0]}.json`;
+  } else {
+    playlistGlob = `{${playlists.join(',')}}.json`;
+  }
   const playlistFiles = await glob(
-    `./cache/${config.indexName}/{${playlists.join(',')}}*.json`
+    `./cache/${config.indexName}/${playlistGlob}`
   );
   const videos = _.flatten(await map(playlistFiles, fileutils.readJSON));
 

@@ -63,7 +63,7 @@ describe('transform', () => {
       const actual = current(input);
 
       expect(actual[0]).toHaveProperty('caption.start', 3);
-      expect(actual[1]).toHaveProperty('caption.start', 6);
+      expect(actual[1]).toHaveProperty('caption.start', 5);
       expect(actual[2]).toHaveProperty('caption.start', 7);
     });
 
@@ -77,6 +77,20 @@ describe('transform', () => {
       expect(actual[0]).toHaveProperty('caption.position', 0);
       expect(actual[1]).toHaveProperty('caption.position', 1);
       expect(actual[2]).toHaveProperty('caption.position', 2);
+    });
+
+    it('adds the caption url', () => {
+      const input = {
+        video: { id: 'foo' },
+        captions: [{ content: 'foo', start: 12.76 }],
+      };
+
+      const actual = current(input);
+
+      expect(actual[0]).toHaveProperty(
+        'caption.url',
+        'https://www.youtube.com/watch?v=foo&t=12s'
+      );
     });
 
     it('adds a unique objectID', () => {

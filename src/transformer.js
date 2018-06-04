@@ -58,6 +58,7 @@ const Transformer = {
     const hashObject = nodeObjectHash().hash;
 
     const videoData = { ...video.video };
+    const videoId = videoData.id;
     _.set(videoData, 'popularity.score', getPopularityScore(videoData));
     _.set(videoData, 'publishedDate', getBucketedDate(videoData.publishedDate));
     let baseRecord = {
@@ -73,8 +74,9 @@ const Transformer = {
     // Group captions two by two, so each record is two lines of captions
     return mapPairSlide(video.captions, (first, second = {}, position) => {
       const content = [first.content, second.content].join(' ');
-      const start = _.round(first.start);
       const duration = _.round(_.sum([first.duration, second.duration]), 2);
+      const start = _.floor(first.start);
+      const url = `https://www.youtube.com/watch?v=${videoId}&t=${start}s`;
 
       const record = {
         ...baseRecord,
@@ -83,6 +85,7 @@ const Transformer = {
           start,
           duration,
           position,
+          url,
         },
       };
 

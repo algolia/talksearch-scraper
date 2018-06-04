@@ -103,10 +103,42 @@ async function getRemoteObjectIDs() {
   }
 }
 
+/**
+ * Check if an index exists
+ * @param {String} indexName Name of the index to test
+ * @returns {Boolean} True if index exists, false otherwise
+ *
+ * There is no API endpoint to test if an index exists, so we test if we can get
+ * the index settings.
+ **/
+async function indexExists(indexName) {
+  try {
+    await indexes[indexName].getSettings();
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
+/**
+ * Create a copy of an existing index
+ * @param {String} source Name of the source index
+ * @param {String} destination Name of the destination index
+ * @returns {Promise} Wait for the new index to be created
+ **/
 async function copyIndexSync(source, destination) {
+  // If the source index does not exist, we simply create it. We can't copy an
+  // empty index because we won't be able to wait for the task to finish.
+  if (!await indexExists(source)) {
+    console.info(`Creating ${source} index`);
+    await indexes[source].setSettings({});
+    return;
+  }
+
   console.info(`Copy ${source} to ${destination}`);
   try {
     const response = await client.copyIndex(source, destination);
+    console.info(response);
     await indexes[source].waitTask(response.taskID);
   } catch (err) {
     errorHandler(err, `Unable to copy index ${source} to ${destination}`);
@@ -184,7 +216,7 @@ function buildManifestBatch(records, indexName) {
 
 async function runBatchSync(batches, userOptions = {}) {
   const options = {
-    batchSize: 1000,
+    batchSize: 100,
     concurrency: 10,
     ...userOptions,
   };
