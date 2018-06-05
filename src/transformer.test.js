@@ -12,6 +12,30 @@ let current;
 describe('transform', () => {
   beforeEach(helper.globalBeforeEach);
 
+  describe('getCaptionUrl', () => {
+    beforeEach(() => {
+      current = module.internals.getCaptionUrl;
+    });
+
+    it('should get a url that goes direction to the start', () => {
+      const actual = current('foo', 42);
+
+      expect(actual).toEqual('https://www.youtube.com/watch?v=foo&t=42s');
+    });
+
+    it('should have a default url if no caption', () => {
+      const actual = current('foo');
+
+      expect(actual).toEqual('https://www.youtube.com/watch?v=foo');
+    });
+
+    it('should use the default url if starts at 0s', () => {
+      const actual = current('foo', 0);
+
+      expect(actual).toEqual('https://www.youtube.com/watch?v=foo');
+    });
+  });
+
   describe('getCaptionDetails', () => {
     beforeEach(() => {
       current = module.internals.getCaptionDetails;
@@ -61,12 +85,17 @@ describe('transform', () => {
       );
     });
 
-    it('should return undefined if no input caption', () => {
-      const caption = undefined;
+    it('should return a default caption if no input caption', () => {
+      const actual = current(undefined, 42, 'foo');
 
-      const actual = current(caption);
-
-      expect(actual).toEqual(undefined);
+      expect(actual).toHaveProperty('content', null);
+      expect(actual).toHaveProperty('duration', 0);
+      expect(actual).toHaveProperty('start', 0);
+      expect(actual).toHaveProperty('position', 42);
+      expect(actual).toHaveProperty(
+        'url',
+        'https://www.youtube.com/watch?v=foo'
+      );
     });
   });
 

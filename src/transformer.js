@@ -38,15 +38,30 @@ function getBucketedDate(timestamp) {
   };
 }
 
-function getCaptionDetails(caption, position, videoId) {
-  if (caption === undefined) {
-    return undefined;
+function getCaptionUrl(videoId, start) {
+  let url = `https://www.youtube.com/watch?v=${videoId}`;
+  if (start > 0) {
+    url = `${url}&t=${start}s`;
+  }
+  return url;
+}
+
+function getCaptionDetails(userCaption, position, videoId) {
+  let caption = userCaption;
+  // Always adding a caption, even if empty, it makes the front-end logic easier
+  // to handle
+  if (!caption) {
+    caption = {
+      content: null,
+      duration: 0,
+      start: 0,
+    };
   }
 
   const content = caption.content;
   const duration = _.round(caption.duration, 2);
   const start = _.floor(caption.start);
-  const url = `https://www.youtube.com/watch?v=${videoId}&t=${start}s`;
+  const url = getCaptionUrl(videoId, start);
 
   return {
     content,
@@ -116,6 +131,7 @@ const Transformer = {
 
   internals: {
     getBucketedDate,
+    getCaptionUrl,
     getPopularityScore,
     getCaptionDetails,
     recordsFromVideo,
