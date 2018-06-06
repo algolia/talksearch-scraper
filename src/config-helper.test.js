@@ -96,6 +96,7 @@ describe('utils', () => {
       const record = {
         video: {
           title: 'Tim Carry - A CSS Search Engine',
+          foo: 'bar',
         },
       };
       const path = 'video.title';
@@ -105,6 +106,7 @@ describe('utils', () => {
 
       expect(actual).toHaveProperty('author.name', 'Tim Carry');
       expect(actual).toHaveProperty('video.title', 'A CSS Search Engine');
+      expect(actual).toHaveProperty('video.foo', 'bar');
     });
 
     it('does nothing if cannot find the key', () => {

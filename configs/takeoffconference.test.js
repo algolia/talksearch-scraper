@@ -1,36 +1,37 @@
 /* eslint-disable import/no-commonjs */
 import config from './takeoffconference.js';
+import helper from '../src/config-helper.js';
 
-xdescribe('takeoffconference', () => {
+describe('takeoffconference', () => {
   describe('transformData', () => {
+    let current;
+    beforeEach(() => {
+      current = input => config.transformData(input, helper);
+    });
+
     it('should extract author and title from the title', () => {
       const input = {
         video: {
-          title:
-            'Lorna Mitchell - Building a Serverless Data Pipeline #hackference2017',
+          title: 'TakeOff 2013 - JSONiq - William Candillon',
         },
       };
 
-      const actual = config.transformData(input);
+      const actual = current(input);
 
-      expect(actual).toHaveProperty('author.name', 'Lorna Mitchell');
-      expect(actual).toHaveProperty(
-        'video.title',
-        'Building a Serverless Data Pipeline'
-      );
+      expect(actual).toHaveProperty('author.name', 'William Candillon');
+      expect(actual).toHaveProperty('video.title', 'JSONiq');
     });
 
-    it('should extract the conference name and year from the playlist', () => {
+    it('should extract the conference year from the playlist', () => {
       const input = {
         playlist: {
-          title: 'Hackference 2017',
+          title: 'Take Off Conference 2013',
         },
       };
 
-      const actual = config.transformData(input);
+      const actual = current(input);
 
-      expect(actual).toHaveProperty('conference.name', 'Hackference');
-      expect(actual).toHaveProperty('conference.year', 2017);
+      expect(actual).toHaveProperty('conference.year', 2013);
     });
   });
 });

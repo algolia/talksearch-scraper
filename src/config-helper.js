@@ -34,11 +34,7 @@ function enrich(record, path, pattern) {
   }
 
   const matches = match(input, pattern);
-
-  const newRecord = { ...record };
-  _.each(matches, (value, key) => {
-    _.set(newRecord, key, value);
-  });
+  const newRecord = _.merge(record, matches);
 
   return newRecord;
 }
