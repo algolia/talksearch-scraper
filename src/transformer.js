@@ -1,6 +1,7 @@
 import _ from 'lodash';
 import dayjs from 'dayjs';
 import nodeObjectHash from 'node-object-hash';
+import configHelper from './config-helper';
 let config;
 
 /**
@@ -93,7 +94,7 @@ function recordsFromVideo(video) {
 
   // Config specific updates
   if (_.get(config, 'transformData')) {
-    baseRecord = config.transformData(baseRecord);
+    baseRecord = config.transformData(baseRecord, configHelper);
   }
 
   // One record per caption, with a minimum of 1 even if no captions

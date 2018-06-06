@@ -7,7 +7,6 @@ jest.mock('axios');
 const axios = require('axios');
 const objectContaining = expect.objectContaining;
 const anyString = expect.any(String);
-const anyObject = expect.any(Object);
 
 let current;
 
@@ -168,7 +167,7 @@ describe('youtube', () => {
       expect(actual[0]).toHaveProperty('video.title', 'foo bar');
     });
 
-    fit('should warn about videos without data', async () => {
+    it('should warn about videos without data', async () => {
       const input = {
         items: [
           {

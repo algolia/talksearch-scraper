@@ -34,24 +34,21 @@ module.exports = {
     'PLMW8Xq7bXrG486Mh95hKjiXRdci60zUlL', // dotJS 2013
     'PLMW8Xq7bXrG7XGG29sXso2hYYNW_14s_A', // dotScale 2013
   ],
-  transformData(record) {
-    // Finding conference and year from playlist name
-    const playlistName = _.get(record, 'playlist.title', '');
-    const [conferenceName, conferenceYear] = playlistName.split(' ');
-    _.set(record, 'conference.name', conferenceName);
-    _.set(record, 'conference.year', _.parseInt(conferenceYear));
+  transformData(rawRecord, helper) {
+    let record = rawRecord;
 
-    // Most titles follow a "dotJS 2013 - Remy Sharp - iframe abuse" pattern
-    const rawTitle = _.get(record, 'video.title');
-    const pattern = /.* - (.*) - (.*)/;
-    if (pattern.test(rawTitle)) {
-      const matches = rawTitle.match(pattern);
-      const authorName = matches[1];
-      const videoTitle = matches[2];
+    record = helper.enrich(
+      record,
+      'playlist.title',
+      '{conference.name} {conference.year}'
+    );
+    _.update(record, 'conference.year', _.parseInt);
 
-      _.set(record, 'author.name', authorName);
-      _.set(record, 'video.title', videoTitle);
-    }
+    record = helper.enrich(
+      record,
+      'video.title',
+      '{_} - {author.name} - {video.title}'
+    );
 
     return record;
   },
