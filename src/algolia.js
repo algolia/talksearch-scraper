@@ -10,10 +10,12 @@ const pulse = new EventEmitter();
 const client = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_API_KEY);
 const defaultIndexSettings = {
   searchableAttributes: [
-    'video.title',
-    'author.name',
+    'unordered(video.title)',
+    'unordered(author.name)',
     'unordered(caption.content)',
   ],
+  // Disable typo-tolerance on dates (1970-2030)
+  disableTypoToleranceOnWords: _.times(60, year => `${1970 + year}`),
   customRanking: [
     'desc(video.hasCaptions)',
     'desc(video.popularity.score)',
@@ -215,7 +217,7 @@ function buildManifestBatch(records, indexName) {
 
 async function runBatchSync(batches, userOptions = {}) {
   const options = {
-    batchSize: 100,
+    batchSize: 1000,
     concurrency: 10,
     ...userOptions,
   };
