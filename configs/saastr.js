@@ -7,13 +7,10 @@ module.exports = {
     'PLGlmLTbngJa9fbcOjinh4FZHVYsizzhdX', // 2017
     'PLGlmLTbngJa-TjQk_B-qAhrjjNu29ydff', // 2016
   ],
-  transformData(rawRecord, _helper) {
-    const record = rawRecord;
+  transformData(rawRecord, helper) {
+    let record = rawRecord;
+    record = helper.guessConferenceYear(record);
 
-    const playlistTitle = _.get(record, 'playlist.title');
-    const conferenceYear = playlistTitle.match(/[0-9]{4}/);
-
-    _.set(record, 'conference.year', _.parseInt(conferenceYear));
 
     return record;
   },

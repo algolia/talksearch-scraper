@@ -121,4 +121,108 @@ describe('utils', () => {
       expect(actual).toEqual(record);
     });
   });
+
+  describe('guessConferenceYear', () => {
+    beforeEach(() => {
+      current = module.guessConferenceYear;
+    });
+
+    it('should guess the year from the playlist title', () => {
+      const record = {
+        playlist: {
+          title: 'Awesome Conference 2018',
+        },
+      };
+
+      const actual = current(record);
+
+      expect(actual).toHaveProperty('conference.year', 2018);
+    });
+  });
+
+  describe('isAuthorName', () => {
+    beforeEach(() => {
+      current = module.isAuthorName;
+    });
+
+    describe('true', () => {
+      it('should validate simple names', () => {
+        const input = 'Piyush Chandra';
+
+        const actual = current(input);
+
+        expect(actual).toEqual(true);
+      });
+    });
+
+    describe('false', () => {
+      it('should reject sentences', () => {
+        const input = 'Are Chatbots ready for Enterprise?';
+
+        const actual = current(input);
+
+        expect(actual).toEqual(false);
+      });
+    });
+  });
+
+  describe('split', () => {
+    beforeEach(() => {
+      current = module.split;
+    });
+
+    it('can split with one separator', () => {
+      const input = 'foo // bar';
+
+      const actual = current(input, '//');
+
+      expect(actual).toEqual(['foo', 'bar']);
+    });
+
+    it('can split by several seperators', () => {
+      const input = 'foo // bar | baz';
+
+      const actual = current(input, '//', '|');
+
+      expect(actual).toEqual(['foo', 'bar', 'baz']);
+    });
+
+    it('removes empty parts', () => {
+      const input = 'foo // bar |';
+
+      const actual = current(input, '//', '|');
+
+      expect(actual).toEqual(['foo', 'bar']);
+    });
+  });
+
+  describe('trimKey', () => {
+    beforeEach(() => {
+      current = module.trimKey;
+    });
+
+    it('removes one passed trim element from the key', () => {
+      const input = {
+        video: {
+          title: 'foo Conference',
+        },
+      };
+
+      const actual = current(input, 'video.title', 'Conference');
+
+      expect(actual).toHaveProperty('video.title', 'foo');
+    });
+
+    it('removes all passed trim element from the key', () => {
+      const input = {
+        video: {
+          title: 'foo Conference Bar',
+        },
+      };
+
+      const actual = current(input, 'video.title', 'Conference', 'Bar');
+
+      expect(actual).toHaveProperty('video.title', 'foo');
+    });
+  });
 });
