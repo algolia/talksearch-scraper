@@ -65,6 +65,25 @@ const Progress = {
       updateCursor();
     },
   },
+  language: {
+    onEnrichStart(data) {
+      const progressName = chalk.cyan('Enriching');
+      const chunkCount = data.videoCount;
+      allBars.language = progressBars.newBar(
+        `[${progressName}] [:bar] :current/:total`,
+        {
+          total: chunkCount,
+          width: 70,
+        }
+      );
+    },
+    onEnrichChunk() {
+      allBars.language.tick();
+    },
+    onEnrichEnd() {
+      updateCursor();
+    },
+  },
   onError(error, title) {
     console.info(chalk.red(title));
     console.error(error);

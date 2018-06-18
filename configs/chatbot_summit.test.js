@@ -2,7 +2,7 @@
 import config from './chatbot_summit.js';
 import helper from '../src/config-helper.js';
 
-describe('Chatbot Summit', () => {
+xdescribe('Chatbot Summit', () => {
   describe('transformData', () => {
     let current;
     beforeEach(() => {

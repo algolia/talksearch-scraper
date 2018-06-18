@@ -1,6 +1,7 @@
 node_modules
 .env
 .envrc
+google.service-account-file.json
 UI/dist
 cache
 logs

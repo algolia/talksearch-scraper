@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
 jest \
+  --config ./jest.config.js \
   --no-cache \
   ./src

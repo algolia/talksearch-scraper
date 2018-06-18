@@ -38,7 +38,7 @@ async function getVideos() {
       const videos = await getVideosFromPlaylist(playlistId);
 
       await fileutils.writeJSON(
-        `./cache/${config.indexName}/${playlistId}.json`,
+        `./cache/${config.indexName}/youtube/${playlistId}.json`,
         videos
       );
     });
@@ -52,7 +52,7 @@ async function getVideos() {
     playlistGlob = `{${playlists.join(',')}}.json`;
   }
   const playlistFiles = await glob(
-    `./cache/${config.indexName}/${playlistGlob}`
+    `./cache/${config.indexName}/youtube/${playlistGlob}`
   );
   const videos = _.flatten(await map(playlistFiles, fileutils.readJSON));
 
