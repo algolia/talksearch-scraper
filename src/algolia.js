@@ -1,16 +1,16 @@
-import EventEmitter from 'events';
 import algoliasearch from 'algoliasearch';
 import _ from 'lodash';
 import pMap from 'p-map';
 import chalk from 'chalk';
 import pAll from 'p-all';
-const ALGOLIA_API_KEY = process.env.ALGOLIA_API_KEY;
-const ALGOLIA_APP_ID = process.env.ALGOLIA_APP_ID;
-const pulse = new EventEmitter();
-const client = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_API_KEY);
+import pulse from './pulse';
+import globals from './globals';
+let client;
+let indexes = {};
 const defaultIndexSettings = {
   searchableAttributes: [
     'unordered(video.title)',
+    'unordered(speakers.name)',
     'unordered(author.name)',
     'unordered(caption.content)',
   ],
@@ -27,6 +27,7 @@ const defaultIndexSettings = {
   ],
   attributesForFaceting: [
     'author.name',
+    'speakers.name',
     'conference.name',
     'conference.year',
     'video.language',
@@ -40,33 +41,6 @@ const defaultIndexSettings = {
   distinct: true,
   attributeForDistinct: 'video.id',
 };
-
-let config = null;
-let indexes = {};
-function init(argv) {
-  config = require(`../configs/${argv.config}.js`);
-  const indexName = config.indexName;
-  const indexTmpName = `${indexName}_tmp`;
-  const indexManifestName = `${indexName}_manifest`;
-  const indexManifestTmpName = `${indexName}_manifest_tmp`;
-
-  const index = client.initIndex(indexName);
-  const indexTmp = client.initIndex(indexTmpName);
-  const indexManifest = client.initIndex(indexManifestName);
-  const indexManifestTmp = client.initIndex(indexManifestTmpName);
-
-  // Global way to access indexes based on their names or aliases
-  indexes = {
-    prod: index,
-    [indexName]: index,
-    tmp: indexTmp,
-    [indexTmpName]: indexTmp,
-    manifest: indexManifest,
-    [indexManifestName]: indexManifest,
-    manifestTmp: indexManifestTmp,
-    [indexManifestTmpName]: indexManifestTmp,
-  };
-}
 
 function getLocalObjectIDs(records) {
   return _.map(records, 'objectID');
@@ -253,17 +227,36 @@ async function runBatchSync(batches, userOptions = {}) {
 }
 
 async function run(records) {
-  const indexTmpName = indexes.tmp.indexName;
-  const indexProdName = indexes.prod.indexName;
-  const indexManifestTmpName = indexes.manifestTmp.indexName;
-  const indexManifestName = indexes.manifest.indexName;
+  client = algoliasearch(globals.algoliaAppId(), globals.algoliaApiKey());
+  const config = globals.config();
+  const indexName = config.indexName;
+  const indexTmpName = `${indexName}_tmp`;
+  const indexManifestName = `${indexName}_manifest`;
+  const indexManifestTmpName = `${indexName}_manifest_tmp`;
+
+  const index = client.initIndex(indexName);
+  const indexTmp = client.initIndex(indexTmpName);
+  const indexManifest = client.initIndex(indexManifestName);
+  const indexManifestTmp = client.initIndex(indexManifestTmpName);
+
+  // Global way to access indexes based on their names or aliases
+  indexes = {
+    prod: index,
+    [indexName]: index,
+    tmp: indexTmp,
+    [indexTmpName]: indexTmp,
+    manifest: indexManifest,
+    [indexManifestName]: indexManifest,
+    manifestTmp: indexManifestTmp,
+    [indexManifestTmpName]: indexManifestTmp,
+  };
 
   try {
     // What records are already in the app?
     const remoteIds = await getRemoteObjectIDs();
 
     // Create a tmp copy of the prod index to add our changes
-    await copyIndexSync(indexProdName, indexTmpName);
+    await copyIndexSync(indexName, indexTmpName);
 
     // Update settings
     await setSettingsSync(indexTmpName, defaultIndexSettings);
@@ -284,7 +277,7 @@ async function run(records) {
         console.info('✔ Manifest overwritten');
       },
       async () => {
-        await moveIndexSync(indexTmpName, indexProdName);
+        await moveIndexSync(indexTmpName, indexName);
         console.info('✔ Production index overwritten');
       },
     ]);
@@ -308,7 +301,6 @@ function errorHandler(err, customMessage) {
 }
 
 const Algolia = {
-  init,
   run,
   on(eventName, callback) {
     pulse.on(eventName, callback);

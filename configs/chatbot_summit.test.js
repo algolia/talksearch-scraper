@@ -2,6 +2,12 @@
 import config from './chatbot_summit.js';
 import helper from '../src/config-helper.js';
 
+// Next step will be to add integration tests.
+// Tests that will take a video object, call the Language API and expect to have
+// the correct results?
+// End-to-end testing, where have a playlist, and I expect some records on the
+// other end
+
 xdescribe('Chatbot Summit', () => {
   describe('transformData', () => {
     let current;

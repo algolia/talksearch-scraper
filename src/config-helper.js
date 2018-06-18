@@ -39,24 +39,6 @@ function enrich(record, path, pattern) {
   return newRecord;
 }
 
-// The year of the talk can often be guessed from the playlist name, as it's the
-// only 4-digit word
-function guessConferenceYear(record) {
-  const playlistTitle = _.get(record, 'playlist.title');
-  if (!playlistTitle) {
-    return record;
-  }
-  const conferenceYear = playlistTitle.match(/[0-9]{4}/);
-
-  const newRecord = _.merge(record, {
-    conference: {
-      year: _.parseInt(conferenceYear),
-    },
-  });
-
-  return newRecord;
-}
-
 // Guess if the input name could be an author name
 function isAuthorName(input) {
   const parts = _.split(input, ' ');
@@ -102,7 +84,6 @@ function trimKey(rawRecord, path, ...trimList) {
 const ConfigHelper = {
   match,
   enrich,
-  guessConferenceYear,
   isAuthorName,
   split,
   trimKey,

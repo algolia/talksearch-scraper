@@ -40,6 +40,12 @@ function getBucketedDate(timestamp) {
   };
 }
 
+/**
+ * Return a url to go to the specific time in the video
+ * @param {String} videoId Video id
+ * @param {Number} start Start time, in seconds
+ * @returns {String} Url pointing to the specific time in the video
+ **/
 function getCaptionUrl(videoId, start) {
   let url = `https://www.youtube.com/watch?v=${videoId}`;
   if (start > 0) {
@@ -48,6 +54,13 @@ function getCaptionUrl(videoId, start) {
   return url;
 }
 
+/**
+ * Return an object representing a caption
+ * @param {String} userCaption Caption string
+ * @param {Number} position Position index in the list of all captions
+ * @param {String} videoId The YouUbe videoId
+ * @returns {Object} An object representing a caption
+ **/
 function getCaptionDetails(userCaption, position, videoId) {
   let caption = userCaption;
   // Always adding a caption, even if empty, it makes the front-end logic easier
@@ -74,6 +87,11 @@ function getCaptionDetails(userCaption, position, videoId) {
   };
 }
 
+/**
+ * Returns an array of record from a video
+ * @param {Object} video The video object
+ * @returns {Array} An array of all records for this video, one per caption
+ **/
 function recordsFromVideo(video) {
   const hashObject = nodeObjectHash().hash;
 
@@ -91,6 +109,8 @@ function recordsFromVideo(video) {
     video: videoDetails,
     playlist: video.playlist,
     channel: video.channel,
+    speakers: video.speakers,
+    conference: video.conference,
   };
 
   // Config specific updates
@@ -118,9 +138,41 @@ function recordsFromVideo(video) {
   });
 }
 
+/**
+ * Guess the conference year based on the playlist name
+ * @param {Object} video The video object
+ * @returns {Number} The conference year
+ **/
+function guessConferenceYear(video) {
+  const playlistTitle = _.get(video, 'playlist.title', null);
+  if (!playlistTitle) {
+    return null;
+  }
+  const matches = playlistTitle.match(/[0-9]{4}/);
+  if (!matches) {
+    return null;
+  }
+  return _.parseInt(matches);
+}
+
+/**
+ * Enrich the raw video data as extracted from YouTube with some guess about
+ * other fields
+ * @param {Array} inputVideos List of raw videos
+ * @returns {Array} The enriched list of videos
+ * Note that this will create .conference and .speakers keys to the object
+ **/
 async function enrichVideos(inputVideos) {
-  // Extract speaker from text analysis of the title
-  const videos = await language.enrichVideos(inputVideos);
+  // Extract speakers from text analysis of the title
+  let videos = await language.enrichVideos(inputVideos);
+
+  // Guessing conference year
+  videos = _.map(videos, video => ({
+    ...video,
+    conference: {
+      year: guessConferenceYear(video),
+    },
+  }));
 
   return videos;
 }
@@ -141,6 +193,8 @@ const Transformer = {
     getCaptionUrl,
     getPopularityScore,
     getCaptionDetails,
+    guessConferenceYear,
+    enrichVideos,
     recordsFromVideo,
   },
 };

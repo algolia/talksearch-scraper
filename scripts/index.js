@@ -23,10 +23,10 @@ const argv = yargs
     progress.displayWarnings();
 
     // Transform videos in records
-    // const records = await transformer.run(videos);
+    const records = await transformer.run(videos);
 
     // Push records
-    // await algolia.run(records);
+    await algolia.run(records);
   } catch (err) {
     console.info(err);
   }

@@ -1,6 +1,8 @@
 /* eslint-disable import/no-commonjs */
 jest.mock('node-object-hash');
 import nodeObjectHash from 'node-object-hash';
+jest.mock('./language');
+import language from './language';
 import module from './transformer';
 import helper from './test-helper';
 
@@ -220,6 +222,107 @@ describe('transform', () => {
       expect(actual).toHaveProperty('month', 1519858800);
       expect(actual).toHaveProperty('day', 1521154800);
       expect(actual).toHaveProperty('timestamp', input);
+    });
+  });
+
+  describe('guessConferenceYear', () => {
+    it('should guess the year from the playlist title', () => {
+      const video = {
+        playlist: {
+          title: 'Awesome Conference 2018',
+        },
+      };
+
+      const actual = module.internals.guessConferenceYear(video);
+
+      expect(actual).toEqual(2018);
+    });
+
+    it('should return null if no playlist title', () => {
+      const video = {};
+
+      const actual = module.internals.guessConferenceYear(video);
+
+      expect(actual).toEqual(null);
+    });
+
+    it('should return null if playlist title not parseable', () => {
+      const video = {
+        playlist: {
+          title: 'Not an interesting title',
+        },
+      };
+
+      const actual = module.internals.guessConferenceYear(video);
+
+      expect(actual).toEqual(null);
+    });
+
+    describe('real examples', () => {
+      describe('saastr', () => {
+        it('2018', () => {
+          const input = {
+            playlist: {
+              title: 'SaaStr Annual 2018: (Some Of) Best Of',
+            },
+          };
+
+          const actual = module.internals.guessConferenceYear(input);
+
+          expect(actual).toEqual(2018);
+        });
+
+        it('2017', () => {
+          const input = {
+            playlist: {
+              title: 'SaaStr Annual 2017 Sessions',
+            },
+          };
+
+          const actual = module.internals.guessConferenceYear(input);
+
+          expect(actual).toEqual(2017);
+        });
+
+        it('2016', () => {
+          const input = {
+            playlist: {
+              title: 'SaaStr Annual 2016',
+            },
+          };
+
+          const actual = module.internals.guessConferenceYear(input);
+
+          expect(actual).toEqual(2016);
+        });
+      });
+    });
+  });
+
+  describe('enrichVideos', () => {
+    beforeEach(() => {
+      // Enriching through language won't do anything by default
+      language.enrichVideos.mockImplementation(args => args);
+    });
+
+    it('enrich videos through language', async () => {
+      const input = [{ foo: 'bar' }];
+      language.enrichVideos.mockImplementation(videos => [
+        { ...videos[0], language: true },
+      ]);
+
+      const actual = await module.internals.enrichVideos(input);
+
+      expect(actual[0]).toHaveProperty('language', true);
+    });
+
+    it('add conference year', async () => {
+      const input = [{ foo: 'bar' }];
+      helper.mockPrivate(module, 'guessConferenceYear', 2018);
+
+      const actual = await module.internals.enrichVideos(input);
+
+      expect(actual[0]).toHaveProperty('conference.year', 2018);
     });
   });
 });

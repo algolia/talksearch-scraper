@@ -122,24 +122,6 @@ describe('utils', () => {
     });
   });
 
-  describe('guessConferenceYear', () => {
-    beforeEach(() => {
-      current = module.guessConferenceYear;
-    });
-
-    it('should guess the year from the playlist title', () => {
-      const record = {
-        playlist: {
-          title: 'Awesome Conference 2018',
-        },
-      };
-
-      const actual = current(record);
-
-      expect(actual).toHaveProperty('conference.year', 2018);
-    });
-  });
-
   describe('isAuthorName', () => {
     beforeEach(() => {
       current = module.isAuthorName;

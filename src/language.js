@@ -1,4 +1,4 @@
-import EventEmitter from 'events';
+import pulse from './pulse';
 import globals from './globals';
 import fileutils from './fileutils';
 import diskLogger from './disk-logger';
@@ -6,7 +6,6 @@ import language from '@google-cloud/language';
 import pMap from 'p-map';
 import uuid from 'uuid/v1';
 import _ from 'lodash';
-const pulse = new EventEmitter();
 let CACHE = {};
 let CLIENT;
 
