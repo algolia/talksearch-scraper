@@ -1,5 +1,7 @@
 import chalk from 'chalk';
 import _ from 'lodash';
+import pulse from './pulse';
+import globals from './globals';
 import MultiProgressBar from 'multi-progress';
 const progressBars = new MultiProgressBar();
 const allBars = {};
@@ -21,69 +23,76 @@ function updateCursor() {
   }
 }
 
-const Progress = {
-  youtube: {
-    onCrawlingStart(data) {
-      const name = data.config.indexName;
-      const total = data.playlists.length;
-      newBar(name, 'blue', total);
-    },
-    onCrawlingEnd(videos) {
-      updateCursor();
-      console.info(`${videos.length} videos found`);
-    },
-    onPlaylistStart(data) {
-      const playlistId = data.playlistId;
-      const totalVideoCount = data.totalVideoCount;
-      newBar(playlistId, 'green', totalVideoCount);
-    },
-    onPlaylistChunk(data) {
-      const playlistId = data.playlistId;
-      const chunkVideoCount = data.chunkVideoCount;
-      allBars[playlistId].tick(chunkVideoCount);
-    },
-    onPlaylistEnd(data) {
-      allBars[data.config.indexName].tick();
-    },
+const youtube = {
+  onCrawlingStart(data) {
+    const name = globals.configName();
+    const total = data.playlists.length;
+    newBar(name, 'blue', total);
   },
-  algolia: {
-    onBatchStart(data) {
-      const progressName = chalk.green(data.uuid);
-      const chunkCount = data.chunkCount;
-      allBars[data.uuid] = progressBars.newBar(
-        `[${progressName}] [:bar] :current/:total`,
-        {
-          total: chunkCount,
-          width: 70,
-        }
-      );
-    },
-    onBatchChunk(uuid) {
-      allBars[uuid].tick();
-    },
-    onBatchEnd() {
-      updateCursor();
-    },
+  onCrawlingEnd() {
+    updateCursor();
   },
-  language: {
-    onEnrichStart(data) {
-      const progressName = chalk.cyan('Enriching');
-      const chunkCount = data.videoCount;
-      allBars.language = progressBars.newBar(
-        `[${progressName}] [:bar] :current/:total`,
-        {
-          total: chunkCount,
-          width: 70,
-        }
-      );
-    },
-    onEnrichChunk() {
-      allBars.language.tick();
-    },
-    onEnrichEnd() {
-      updateCursor();
-    },
+  onVideos(data) {
+    const videos = data.videos;
+    console.info(`${videos.length} videos found`);
   },
+  onPlaylistStart(data) {
+    const playlistId = data.playlistId;
+    const totalVideoCount = data.totalVideoCount;
+    newBar(playlistId, 'green', totalVideoCount);
+  },
+  onPlaylistChunk(data) {
+    const playlistId = data.playlistId;
+    const chunkVideoCount = data.chunkVideoCount;
+    allBars[playlistId].tick(chunkVideoCount);
+  },
+  onPlaylistEnd() {
+    const name = globals.configName();
+    allBars[name].tick();
+  },
+};
+
+const algolia = {
+  onBatchStart(data) {
+    const progressName = chalk.green(data.uuid);
+    const chunkCount = data.chunkCount;
+    allBars[data.uuid] = progressBars.newBar(
+      `[${progressName}] [:bar] :current/:total`,
+      {
+        total: chunkCount,
+        width: 70,
+      }
+    );
+  },
+  onBatchChunk(uuid) {
+    allBars[uuid].tick();
+  },
+  onBatchEnd() {
+    updateCursor();
+  },
+};
+
+const language = {
+  onEnrichStart(data) {
+    const progressName = chalk.cyan('Enriching');
+    const chunkCount = data.videoCount;
+    allBars.language = progressBars.newBar(
+      `[${progressName}] [:bar] :current/:total`,
+      {
+        total: chunkCount,
+        width: 70,
+      }
+    );
+  },
+  onEnrichChunk() {
+    allBars.language.tick();
+  },
+  onEnrichEnd() {
+    updateCursor();
+  },
+};
+
+const generic = {
   onError(error, title) {
     console.info(chalk.red(title));
     console.error(error);
@@ -91,76 +100,42 @@ const Progress = {
   onWarning(title, details) {
     warnings.push({ title, details });
   },
-  displayWarnings() {
-    updateCursor();
-    const groupedWarnings = _.groupBy(warnings, 'title');
-    _.each(groupedWarnings, (typedWarnings, title) => {
-      console.info(chalk.red(title));
-
-      const displayedResult = _.flatten(_.map(typedWarnings, 'details')).join(
-        '\n'
-      );
-
-      console.info(chalk.yellow(displayedResult));
-    });
-  },
-  // onPlaylistGetPage(playlistId, pageInfo) {
-  //   // First call, we create the progress bar
-  //   if (!progressPlaylist) {
-  //     console.info(chalk.yellow(`Playlist ${playlistId}`));
-  //     createPlaylistProgressBar(pageInfo.max);
-  //   }
-
-  //   tickPlaylist(pageInfo.increment);
-  // },
-  // onPlaylistGetEnd() {
-  //   // Move cursor offscreen, it will force to put it at the lowest it can be
-  //   process.stdout.cursorTo(0, 10000);
-
-  //   if (errors.length === 0) {
-  //     console.info(chalk.bold.green('\n✔ All done'));
-  //   }
-  // },
-  // onVideoDataStart(videoId) {
-  //   const id = chalk.green(videoId);
-  //   progressVideos[videoId] = progressBars.newBar(`[${id}] :name :details`, {
-  //     total: 2,
-  //     width: 10,
-  //     complete: chalk.green('.'),
-  //     incomplete: chalk.grey('.'),
-  //   });
-  //   displayTokensVideo[videoId] = { name: '???' };
-  //   refreshVideo(videoId, {
-  //     details: chalk.white('Getting basic informations'),
-  //   });
-  // },
-
-  // onVideoDataBasic(videoId, data) {
-  //   refreshVideo(videoId, { name: chalk.blue(data.snippet.title) });
-  // },
-
-  // onVideoCaptionsStart(videoId) {
-  //   refreshVideo(videoId, { details: chalk.white('Getting captions') });
-  // },
-
-  // onVideoRawStart(videoId) {
-  //   refreshVideo(videoId, { details: chalk.white('Getting raw data') });
-  // },
-
-  // onVideoDataEnd(videoId, data) {
-  //   const captionsCount = data.captions.length;
-  //   displayTokens.captions += captionsCount;
-  //   if (captionsCount > 0) {
-  //     refreshPlaylist();
-  //     refreshVideo(videoId, {
-  //       details: chalk.green(`✔ Done (${captionsCount} captions)`),
-  //     });
-  //   }
-  // },
-
-  // onVideoError(videoId, errorMessage) {
-  //   refreshVideo(videoId, { details: chalk.red(`✘ ${errorMessage}`) });
-  // },
 };
 
-export default Progress;
+function displayWarnings() {
+  updateCursor();
+  const groupedWarnings = _.groupBy(warnings, 'title');
+  _.each(groupedWarnings, (typedWarnings, title) => {
+    console.info(chalk.red(title));
+
+    const displayedResult = _.flatten(_.map(typedWarnings, 'details')).join(
+      '\n'
+    );
+
+    console.info(chalk.yellow(displayedResult));
+  });
+}
+
+pulse.on('error', generic.onError);
+pulse.on('warning', generic.onWarning);
+
+pulse.on('youtube:crawling:start', youtube.onCrawlingStart);
+pulse.on('youtube:crawling:end', youtube.onCrawlingEnd);
+pulse.on('youtube:videos', youtube.onVideos);
+pulse.on('playlist:start', youtube.onPlaylistStart);
+pulse.on('playlist:chunk', youtube.onPlaylistChunk);
+pulse.on('playlist:end', youtube.onPlaylistEnd);
+
+pulse.on('batch:start', algolia.onBatchStart);
+pulse.on('batch:chunk', algolia.onBatchChunk);
+pulse.on('batch:end', algolia.onBatchEnd);
+
+pulse.on('enrich:start', language.onEnrichStart);
+pulse.on('enrich:chunk', language.onEnrichChunk);
+pulse.on('enrich:end', language.onEnrichEnd);
+
+const progress = {
+  displayWarnings,
+};
+
+export default progress;

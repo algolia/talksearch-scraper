@@ -14,7 +14,7 @@ async function write(destination, content) {
   return writing;
 }
 
-async function writeJSON(destination, data) {
+async function writeJson(destination, data) {
   const content = stringify(data, { space: 2 });
   const writing = await write(destination, content);
   return writing;
@@ -26,12 +26,12 @@ async function read(source) {
 }
 
 /**
- * Read a JSON file on disk and return its parsed content.
- * @param {String} source Path to the JSON file
- * @return {Promise.<Object>} The parsed content of the JSON file
- * Will return null if the file does not exist or is not JSON
+ * Read a Json file on disk and return its parsed content.
+ * @param {String} source Path to the Json file
+ * @return {Promise.<Object>} The parsed content of the Json file
+ * Will return null if the file does not exist or is not Json
  **/
-async function readJSON(source) {
+async function readJson(source) {
   try {
     const content = await read(source);
     return JSON.parse(content);
@@ -40,5 +40,5 @@ async function readJSON(source) {
   }
 }
 
-export { write, writeJSON, read, readJSON };
-export default { write, writeJSON, read, readJSON };
+export { write, writeJson, read, readJson };
+export default { write, writeJson, read, readJson };

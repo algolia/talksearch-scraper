@@ -3,6 +3,11 @@ import module from './language';
 import helper from './test-helper';
 jest.mock('./disk-logger');
 
+jest.mock('./globals');
+import globals from './globals';
+const mockGlobalsReadFromCache = jest.fn();
+globals.readFromCache = mockGlobalsReadFromCache;
+
 import fileutils from './fileutils';
 jest.mock('./fileutils');
 
@@ -22,13 +27,12 @@ describe('language', () => {
   beforeEach(helper.globalBeforeEach);
   beforeEach(() => {
     setCache({});
-    module.init({});
     helper.mockPrivate(module, 'cacheFilePath', cacheFilePath);
   });
 
   describe('grabCache', () => {
     it('should set the CACHE to the value of the file on disk', async () => {
-      fileutils.readJSON.mockReturnValue({ foo: 'bar' });
+      fileutils.readJson.mockReturnValue({ foo: 'bar' });
 
       await module.internals.grabCache();
       const actual = getCache();
@@ -37,7 +41,7 @@ describe('language', () => {
     });
 
     it('should set the CACHE to {} if no file on disk', async () => {
-      fileutils.readJSON.mockReturnValue(null);
+      fileutils.readJson.mockReturnValue(null);
 
       await module.internals.grabCache();
       const actual = getCache();
@@ -52,7 +56,7 @@ describe('language', () => {
 
       await module.internals.releaseCache();
 
-      expect(fileutils.writeJSON).toHaveBeenCalledWith(cacheFilePath, {
+      expect(fileutils.writeJson).toHaveBeenCalledWith(cacheFilePath, {
         foo: 'bar',
       });
     });
@@ -61,7 +65,7 @@ describe('language', () => {
   describe('readFromCache', () => {
     describe('cache enabled', () => {
       beforeEach(() => {
-        module.init({ useCache: true });
+        mockGlobalsReadFromCache.mockReturnValue(true);
       });
 
       it('should return the cache value if available', () => {
@@ -88,7 +92,7 @@ describe('language', () => {
 
     describe('cache disabled', () => {
       beforeEach(() => {
-        module.init({ useCache: false });
+        mockGlobalsReadFromCache.mockReturnValue(false);
       });
       it('should return false', () => {
         const actual = module.internals.readFromCache('foo', 'bar');
@@ -107,7 +111,7 @@ describe('language', () => {
   describe('writeToCache', () => {
     describe('cache enabled', () => {
       beforeEach(() => {
-        module.init({ useCache: true });
+        mockGlobalsReadFromCache.mockReturnValue(true);
       });
 
       it('should add a new input to existing video', () => {
@@ -133,7 +137,7 @@ describe('language', () => {
 
     describe('cache disabled', () => {
       beforeEach(() => {
-        module.init({ useCache: false });
+        mockGlobalsReadFromCache.mockReturnValue(false);
       });
 
       it('should not update the cache', () => {
@@ -160,7 +164,7 @@ describe('language', () => {
   describe('enrichVideos', () => {
     describe('with cache enabled', () => {
       beforeEach(() => {
-        module.init({ useCache: true });
+        mockGlobalsReadFromCache.mockReturnValue(true);
       });
 
       it('should call grabCache and releaseCache', async () => {
@@ -177,7 +181,7 @@ describe('language', () => {
 
     describe('with cache disabled', () => {
       beforeEach(() => {
-        module.init({ useCache: false });
+        mockGlobalsReadFromCache.mockReturnValue(false);
       });
 
       it('should not call grabCache and releaseCache', async () => {

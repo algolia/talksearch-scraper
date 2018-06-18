@@ -1,9 +1,6 @@
 /* eslint-disable import/no-commonjs */
 jest.mock('node-object-hash');
-const mockHashObject = jest.fn();
-require('node-object-hash').mockReturnValue({
-  hash: mockHashObject,
-});
+import nodeObjectHash from 'node-object-hash';
 import module from './transformer';
 import helper from './test-helper';
 
@@ -103,11 +100,14 @@ describe('transform', () => {
     let mockGetCaptionDetails;
     let mockGetPopularityScore;
     let mockGetBucketedDate;
+    let mockHash;
     beforeEach(() => {
       current = module.internals.recordsFromVideo;
       mockGetCaptionDetails = helper.mockPrivate(module, 'getCaptionDetails');
       mockGetPopularityScore = helper.mockPrivate(module, 'getPopularityScore');
       mockGetBucketedDate = helper.mockPrivate(module, 'getBucketedDate');
+      mockHash = jest.fn();
+      nodeObjectHash.mockReturnValue({ hash: mockHash });
     });
 
     it('get one record per caption', () => {
@@ -157,7 +157,7 @@ describe('transform', () => {
     it('adds a unique objectID', () => {
       const input = { video: { id: 'foo' } };
 
-      mockHashObject.mockReturnValue('uuid');
+      mockHash.mockReturnValue('uuid');
 
       const actual = current(input);
 

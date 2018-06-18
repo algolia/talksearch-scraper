@@ -1,8 +1,8 @@
+const WRITE_RESPONSE_LOGS = process.env.WRITE_RESPONSE_LOGS;
 import fileutils from './fileutils';
 import _ from 'lodash';
 
 const DiskLogger = {
-  enabled: false,
   /**
    * Log the API return data to disk
    *
@@ -15,12 +15,12 @@ const DiskLogger = {
    * JSON, otherwise it will be saved as raw text.
    **/
   async write(destination, content) {
-    if (!this.enabled) {
+    if (!WRITE_RESPONSE_LOGS) {
       return false;
     }
 
     const writeMethod = _.isObject(content)
-      ? fileutils.writeJSON
+      ? fileutils.writeJson
       : fileutils.write;
     const writing = await writeMethod(`./logs/${destination}`, content);
     return writing;

@@ -1,4 +1,5 @@
 import EventEmitter from 'events';
+import globals from './globals';
 import fileutils from './fileutils';
 import diskLogger from './disk-logger';
 import language from '@google-cloud/language';
@@ -6,30 +7,14 @@ import pMap from 'p-map';
 import uuid from 'uuid/v1';
 import _ from 'lodash';
 const pulse = new EventEmitter();
-let config = null;
-let runOptions = null;
 let CACHE = {};
-let client;
+let CLIENT;
 
-// We use an internal cache to avoid hitting the Google Language API too often.
-// We'll create a file on disk with entries for each videoId/input string and
-// saving the output entities. When using the --use-cache flag, we'll read
-// values from this file.
-function init(argv) {
-  runOptions = {
-    useCache: argv.useCache,
-    configName: argv.config,
-  };
-
-  try {
-    config = require(`../configs/${argv.config}.js`);
-  } catch (err) {
-    config = {};
+function client() {
+  if (CLIENT) {
+    return CLIENT;
   }
-
-  client = new language.LanguageServiceClient();
-
-  diskLogger.enabled = argv.logs;
+  return (CLIENT = new language.LanguageServiceClient());
 }
 
 /**
@@ -53,7 +38,8 @@ async function enrichVideo(video) {
  **/
 async function enrichVideos(videos) {
   pulse.emit('enrich:start', { videoCount: videos.length });
-  if (runOptions.useCache) {
+  const shouldUseCache = globals.readFromCache();
+  if (shouldUseCache) {
     await grabCache();
   }
   const newVideos = await pMap(videos, async video => {
@@ -62,7 +48,7 @@ async function enrichVideos(videos) {
     return newVideo;
   });
 
-  if (runOptions.useCache) {
+  if (shouldUseCache) {
     await releaseCache();
   }
 
@@ -87,11 +73,11 @@ async function getEntities(videoId, input) {
     content: input,
     type: 'PLAIN_TEXT',
   };
-  const results = await client.analyzeEntities({ document: options });
+  const results = await client().analyzeEntities({ document: options });
   const entities = results[0].entities;
 
   // Save the API result to disk for debug purposes
-  const logPath = `language/${config.indexName}/${uuid()}.json`;
+  const logPath = `language/${globals.configName()}/${uuid()}.json`;
   const logResults = { input, results };
   diskLogger.write(logPath, logResults);
 
@@ -145,7 +131,7 @@ function setCache(newCache) {
  * @return {String} Filepath, relative to the config
  **/
 function cacheFilePath() {
-  return `./cache/${config.indexName}/language/cache.json`;
+  return `./cache/${globals.configName()}/language/cache.json`;
 }
 
 /**
@@ -154,7 +140,7 @@ function cacheFilePath() {
  **/
 async function grabCache() {
   const cacheFile = cacheFilePath();
-  const cacheContent = await fileutils.readJSON(cacheFile);
+  const cacheContent = await fileutils.readJson(cacheFile);
   CACHE = cacheContent || {};
 }
 
@@ -164,7 +150,7 @@ async function grabCache() {
  **/
 async function releaseCache() {
   const cacheFile = cacheFilePath();
-  await fileutils.writeJSON(cacheFile, CACHE);
+  await fileutils.writeJson(cacheFile, CACHE);
 }
 
 /**
@@ -174,7 +160,8 @@ async function releaseCache() {
  * @return {Array|Boolean} false if no result, the array of entities otherwise
  **/
 function readFromCache(videoId, input) {
-  if (!runOptions.useCache) {
+  const shouldUseCache = globals.readFromCache();
+  if (!shouldUseCache) {
     return false;
   }
 
@@ -196,7 +183,7 @@ function readFromCache(videoId, input) {
  * releaseCache() to commit it to disk.
  **/
 function writeToCache(videoId, input, entities) {
-  if (!runOptions.useCache) {
+  if (!globals.readFromCache()) {
     return false;
   }
 
@@ -209,7 +196,6 @@ function writeToCache(videoId, input, entities) {
 }
 
 const Language = {
-  init,
   enrichVideos,
   on(eventName, callback) {
     pulse.on(eventName, callback);

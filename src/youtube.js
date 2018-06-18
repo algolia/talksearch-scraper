@@ -1,64 +1,72 @@
-import { forEach, map } from 'p-iteration';
-import pMap from 'p-map';
 import axios from 'axios';
-import _glob from 'glob';
-import dayjs from 'dayjs';
 import cheerio from 'cheerio';
-import EventEmitter from 'events';
-import parseIsoDuration from 'parse-iso-duration';
-import qs from 'query-string';
+import dayjs from 'dayjs';
 import diskLogger from './disk-logger';
 import fileutils from './fileutils';
+import globals from './globals';
+import pMap from 'p-map';
+import parseIsoDuration from 'parse-iso-duration';
 import pify from 'pify';
+import pulse from './pulse';
+import qs from 'query-string';
+import _glob from 'glob';
 import _ from 'lodash';
-const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
-const pulse = new EventEmitter();
+import { forEach, map } from 'p-iteration';
 const glob = pify(_glob);
 
-let config = null;
-let runOptions = null;
-
-function init(argv) {
-  runOptions = {
-    useCache: argv.useCache,
-    configName: argv.config,
-  };
-  config = require(`../configs/${argv.config}.js`);
-
-  diskLogger.enabled = argv.logs;
-}
-
 async function getVideos() {
-  const playlists = config.playlists;
-  // Download YouTube data on disk
-  if (!runOptions.useCache) {
-    pulse.emit('crawling:start', { config, playlists });
+  const shouldReadFromCache = globals.readFromCache();
 
-    await forEach(playlists, async playlistId => {
-      const videos = await getVideosFromPlaylist(playlistId);
+  // Get videos either from disk cache or API
+  const videos = shouldReadFromCache
+    ? await getVideosFromCache()
+    : await getVideosFromApi();
 
-      await fileutils.writeJSON(
-        `./cache/${config.indexName}/youtube/${playlistId}.json`,
-        videos
-      );
-    });
-  }
-
-  // Read YouTube data from disk
-  let playlistGlob;
-  if (playlists.length === 1) {
-    playlistGlob = `${playlists[0]}.json`;
-  } else {
-    playlistGlob = `{${playlists.join(',')}}.json`;
-  }
-  const playlistFiles = await glob(
-    `./cache/${config.indexName}/youtube/${playlistGlob}`
-  );
-  const videos = _.flatten(await map(playlistFiles, fileutils.readJSON));
-
-  pulse.emit('crawling:end', videos);
+  pulse.emit('youtube:videos', { videos });
 
   return videos;
+}
+
+async function getVideosFromCache() {
+  const config = globals.config();
+  const configName = globals.configName();
+  const playlists = config.playlists;
+
+  const playlistGlob =
+    playlists.length === 1
+      ? `${playlists[0]}.json`
+      : `{${playlists.join(',')}}.json`;
+
+  const playlistFiles = await glob(
+    `./cache/${configName}/youtube/${playlistGlob}`
+  );
+
+  const videos = _.flatten(await map(playlistFiles, fileutils.readJson));
+
+  return videos;
+}
+
+async function getVideosFromApi() {
+  const config = globals.config();
+  const configName = globals.configName();
+  const playlists = config.playlists;
+
+  pulse.emit('youtube:crawling:start', { playlists });
+
+  const allVideos = [];
+  await forEach(playlists, async playlistId => {
+    const videos = await getVideosFromPlaylist(playlistId);
+
+    await fileutils.writeJson(
+      `./cache/${configName}/youtube/${playlistId}.json`,
+      videos
+    );
+
+    allVideos.push(videos);
+  });
+
+  pulse.emit('youtube:crawling:end');
+  return _.flatten(allVideos);
 }
 
 /**
@@ -115,7 +123,7 @@ async function getVideosFromPlaylist(playlistId) {
       playlist: playlistData,
     }));
 
-    pulse.emit('playlist:end', { config, videos });
+    pulse.emit('playlist:end', { videos });
 
     return videos;
   } catch (err) {
@@ -139,8 +147,22 @@ async function getVideosFromPlaylistPage(pageResults) {
   // Page results will give us the videoId and matching position in playlist
   const allVideoInfoFromPage = {};
   _.each(pageResults.items, video => {
-    const videoId = video.contentDetails.videoId;
-    const positionInPlaylist = _.get(video, 'snippet.positionInPlaylist');
+    const videoId = _.get(video, 'contentDetails.videoId');
+    const positionInPlaylist = _.get(video, 'snippet.position');
+
+    // Some videos are sometimes set several times in the same playlist page,
+    // resulting in final count being wrong
+    if (allVideoInfoFromPage[videoId]) {
+      const initialPosition =
+        allVideoInfoFromPage[videoId].video.positionInPlaylist;
+      const newPosition = positionInPlaylist;
+      pulse.emit(
+        'warning',
+        'Some videos are added several times to the same playlist',
+        `https://youtu.be/${videoId} at position ${initialPosition} and ${newPosition}`
+      );
+    }
+
     allVideoInfoFromPage[videoId] = {
       video: {
         id: videoId,
@@ -262,6 +284,7 @@ function formatVideo(data, captions) {
   const popularity = formatPopularity(data);
   const duration = formatDuration(data);
   const publishedDate = dayjs(_.get(data, 'snippet.publishedAt')).unix();
+  const url = `https://www.youtube.com/watch?v=${videoId}`;
 
   return {
     id: videoId,
@@ -272,6 +295,7 @@ function formatVideo(data, captions) {
     publishedDate,
     popularity,
     duration,
+    url,
     ...captionsMetadata,
   };
 }
@@ -437,7 +461,7 @@ async function get(endpoint, params) {
       baseURL: 'https://www.googleapis.com/youtube/v3',
       url: endpoint,
       params: {
-        key: YOUTUBE_API_KEY,
+        key: globals.youtubeApiKey(),
         ...params,
       },
     };
@@ -450,10 +474,7 @@ async function get(endpoint, params) {
 }
 
 const Youtube = {
-  // Public methods
-  init,
   getVideos,
-  // Allow dispatching of events
   on(eventName, callback) {
     pulse.on(eventName, callback);
   },

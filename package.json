@@ -7,7 +7,9 @@
     "test": "./scripts/test",
     "test:watch": "./scripts/test-watch",
     "lint": "./scripts/lint",
-    "index": "babel-node ./scripts/index.js"
+    "index": "babel-node ./scripts/index.js",
+    "index:cache": "READ_FROM_CACHE=1 babel-node ./scripts/index.js",
+    "index:logs": "WRITE_RESPONSE_LOGS=1 babel-node ./scripts/index.js"
   },
   "repository": {
     "type": "git",

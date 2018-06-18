@@ -1,8 +1,9 @@
 import _ from 'lodash';
 import dayjs from 'dayjs';
+import globals from './globals';
 import nodeObjectHash from 'node-object-hash';
 import configHelper from './config-helper';
-let config;
+import language from '../src/language';
 
 /**
  * Compute a value for ranking based on the various popularity metrics.
@@ -93,6 +94,7 @@ function recordsFromVideo(video) {
   };
 
   // Config specific updates
+  const config = globals.config();
   if (_.get(config, 'transformData')) {
     baseRecord = config.transformData(baseRecord, configHelper);
   }
@@ -116,16 +118,20 @@ function recordsFromVideo(video) {
   });
 }
 
-const Transformer = {
-  init(argv) {
-    config = require(`../configs/${argv.config}.js`);
-  },
+async function enrichVideos(inputVideos) {
+  // Extract speaker from text analysis of the title
+  const videos = await language.enrichVideos(inputVideos);
 
-  run(videos) {
-    let records = [];
-    _.each(videos, video => {
-      records = _.concat(records, recordsFromVideo(video));
-    });
+  return videos;
+}
+
+const Transformer = {
+  async run(inputVideos) {
+    // Enrich videos
+    const videos = await enrichVideos(inputVideos);
+
+    // Convert videos to records
+    const records = _.flatten(_.map(videos, recordsFromVideo));
 
     return records;
   },

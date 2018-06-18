@@ -3,8 +3,14 @@ import module from './youtube';
 import helper from './test-helper';
 jest.mock('./disk-logger');
 jest.mock('./fileutils');
+
 jest.mock('axios');
-const axios = require('axios');
+import axios from 'axios';
+
+jest.mock('./pulse');
+import pulse from './pulse';
+pulse.emit = jest.fn();
+
 const objectContaining = expect.objectContaining;
 const anyString = expect.any(String);
 
@@ -123,7 +129,7 @@ describe('youtube', () => {
         items: [
           {
             contentDetails: { videoId: 'foo' },
-            snippet: { positionInPlaylist: 42 },
+            snippet: { position: 42 },
           },
         ],
       };
@@ -145,11 +151,11 @@ describe('youtube', () => {
         items: [
           {
             contentDetails: { videoId: 'foo' },
-            snippet: { positionInPlaylist: 42 },
+            snippet: { position: 42 },
           },
           {
             contentDetails: { videoId: 'bar' },
-            snippet: { positionInPlaylist: 43 },
+            snippet: { position: 43 },
           },
         ],
       };
@@ -184,14 +190,28 @@ describe('youtube', () => {
         },
       });
 
-      const mockWarning = jest.fn();
-      module.on('warning', mockWarning);
+      await current(input);
+
+      expect(pulse.emit).toHaveBeenCalledWith('warning', anyString, [
+        'https://youtu.be/foo',
+      ]);
+    });
+
+    it('should warn about videos added several times to the playlist', async () => {
+      const input = {
+        items: [
+          {
+            contentDetails: { videoId: 'foo' },
+          },
+          {
+            contentDetails: { videoId: 'foo' },
+          },
+        ],
+      };
 
       await current(input);
 
-      expect(mockWarning).toHaveBeenCalledWith(anyString, [
-        'https://youtu.be/foo',
-      ]);
+      expect(pulse.emit).toHaveBeenCalledWith('warning', anyString, anyString);
     });
   });
 
@@ -365,6 +385,19 @@ describe('youtube', () => {
       const actual = current(input);
 
       expect(actual).toHaveProperty('publishedDate', 1521216269);
+    });
+
+    it('should contain the video url', () => {
+      const input = {
+        id: 'foo',
+      };
+
+      const actual = current(input);
+
+      expect(actual).toHaveProperty(
+        'url',
+        'https://www.youtube.com/watch?v=foo'
+      );
     });
   });
 

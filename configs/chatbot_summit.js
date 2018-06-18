@@ -4,7 +4,7 @@ module.exports = {
   indexName: 'chatbot_summit',
   playlists: [
     'PLTr6zBI1qE6ZJLibC66IsVpfkW9LGC6j_', // 2018
-    'PLTr6zBI1qE6YLYSi05CYy3O5qYy_M9oze', // 2017
+    // 'PLTr6zBI1qE6YLYSi05CYy3O5qYy_M9oze', // 2017
   ],
   xtransformData(rawRecord, helper) {
     let record = rawRecord;
