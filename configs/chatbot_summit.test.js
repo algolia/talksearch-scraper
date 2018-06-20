@@ -8,7 +8,7 @@ import helper from '../src/config-helper.js';
 // End-to-end testing, where have a playlist, and I expect some records on the
 // other end
 
-xdescribe('Chatbot Summit', () => {
+describe('Chatbot Summit', () => {
   describe('transformData', () => {
     let current;
     beforeEach(() => {
@@ -17,6 +17,7 @@ xdescribe('Chatbot Summit', () => {
 
     it('2017, Chatbots ready for enterprise', () => {
       const input = {
+        speakers: [{ name: 'Piyush Chandra' }],
         video: {
           title:
             'Piyush Chandra // Are Chatbots ready for Enterprise? // Chatbot Summit Berlin 2017',
@@ -25,7 +26,6 @@ xdescribe('Chatbot Summit', () => {
 
       const actual = current(input);
 
-      expect(actual).toHaveProperty('author.name', 'Piyush Chandra');
       expect(actual).toHaveProperty(
         'video.title',
         'Are Chatbots ready for Enterprise?'
@@ -34,6 +34,7 @@ xdescribe('Chatbot Summit', () => {
 
     it('2017, The Ethical Beliefs of Machines', () => {
       const input = {
+        speakers: [{ name: 'Nicolai Andersen' }],
         video: {
           title:
             'Chatbot Summit Berlin 2017 // Nicolai Andersen // The Ethical Beliefs of Machines',
@@ -42,14 +43,13 @@ xdescribe('Chatbot Summit', () => {
 
       const actual = current(input);
 
-      expect(actual).toHaveProperty('author.name', 'Nicolai Andersen');
       expect(actual).toHaveProperty(
         'video.title',
         'The Ethical Beliefs of Machines'
       );
     });
 
-    xit('2017, Opening Keynote', () => {
+    it('2017, Opening Keynote', () => {
       const input = {
         video: {
           title:
@@ -60,10 +60,26 @@ xdescribe('Chatbot Summit', () => {
       const actual = current(input);
 
       expect(actual).toHaveProperty(
-        'author.name',
-        'Yoav Barel, Founder & CEO Chatbot Summit'
+        'video.title',
+        'Yoav Barel, Founder & CEO Chatbot Summit | Opening Keynote'
       );
-      expect(actual).toHaveProperty('video.title', 'Opening Keynote');
+    });
+
+    it('2017, The Secrets of Bots at Scale', () => {
+      const input = {
+        speakers: [{ name: 'Eran Vanounou' }, { name: 'Adam Orentlicher' }],
+        video: {
+          title:
+            'Eran Vanounou and Adam Orentlicher // The Secrets of Bots at Scale',
+        },
+      };
+
+      const actual = current(input);
+
+      expect(actual).toHaveProperty(
+        'video.title',
+        'Eran Vanounou and Adam Orentlicher // The Secrets of Bots at Scale'
+      );
     });
   });
 });

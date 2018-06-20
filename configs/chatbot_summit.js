@@ -9,7 +9,7 @@ module.exports = {
   transformData(rawRecord, helper) {
     let record = rawRecord;
 
-    // Remove cruft from video titles
+    // Remove conference name from video titles
     record = helper.trimKey(
       record,
       'video.title',
@@ -17,6 +17,22 @@ module.exports = {
       'Chatbot Summit Tel Aviv 2018',
       'Chatbot Summit Berlin 2017'
     );
+
+    // Remove speaker name from titles
+    const speakerNames = _.map(_.get(record, 'speakers'), 'name');
+    let videoTitle = _.get(record, 'video.title');
+    if (speakerNames.length === 1) {
+      _.each(speakerNames, speakerName => {
+        videoTitle = _.replace(videoTitle, `${speakerName} //`, '');
+        videoTitle = _.replace(videoTitle, `// ${speakerName}`, '');
+      });
+    }
+
+    // remove other cruft
+    videoTitle = _.replace(videoTitle, '|  |', '|');
+    videoTitle = _.trim(videoTitle, '/|');
+    videoTitle = _.trim(videoTitle);
+    _.set(record, 'video.title', videoTitle);
 
     return record;
   },
