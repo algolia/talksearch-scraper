@@ -10,13 +10,11 @@ module.exports = {
   transformData(rawRecord, helper) {
     let record = rawRecord;
 
-    record = helper.enrich(record, 'playlist.title', '{_} {conference.year}');
-    _.update(record, 'conference.year', _.parseInt);
-
+    // Videos all follow the same
     record = helper.enrich(
       record,
       'video.title',
-      '{_} - {video.title} - {author.name}'
+      '{_} - {video.title} - {_speaker_}'
     );
 
     return record;

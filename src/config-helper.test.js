@@ -120,6 +120,20 @@ describe('utils', () => {
 
       expect(actual).toEqual(record);
     });
+
+    it('it converts speakers to an array with names', () => {
+      const record = {
+        video: {
+          title: 'Tim Carry - bar',
+        },
+      };
+      const path = 'video.title';
+      const pattern = '{_speaker_} - {video.title}';
+
+      const actual = current(record, path, pattern);
+
+      expect(actual).toHaveProperty('speakers', [{ name: 'Tim Carry' }]);
+    });
   });
 
   describe('isAuthorName', () => {

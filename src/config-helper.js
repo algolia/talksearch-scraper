@@ -34,6 +34,12 @@ function enrich(record, path, pattern) {
   }
 
   const matches = match(input, pattern);
+
+  // Special handling of speakers
+  if (matches._speaker_) {
+    matches.speakers = [{ name: matches._speaker_ }];
+    delete matches._speaker_;
+  }
   const newRecord = _.merge(record, matches);
 
   return newRecord;

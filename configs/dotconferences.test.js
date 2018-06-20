@@ -9,19 +9,7 @@ describe('dotconferences', () => {
       current = input => config.transformData(input, helper);
     });
 
-    it('should extract the author from the title', () => {
-      const input = {
-        video: {
-          title: 'dotJS 2013 - Remy Sharp - iframe abuse',
-        },
-      };
-
-      const actual = current(input);
-
-      expect(actual).toHaveProperty('author.name', 'Remy Sharp');
-    });
-
-    it('should extract the conference name and year from the playlist', () => {
+    it('should extract the conference name from the playlist', () => {
       const input = {
         playlist: {
           title: 'dotJS 2017',
@@ -31,10 +19,9 @@ describe('dotconferences', () => {
       const actual = current(input);
 
       expect(actual).toHaveProperty('conference.name', 'dotJS');
-      expect(actual).toHaveProperty('conference.year', 2017);
     });
 
-    it('should extract title information', () => {
+    it('should extract title and speaker information', () => {
       const input = {
         video: {
           title: 'dotJS 2013 - Remy Sharp - iframe abuse',
@@ -43,7 +30,7 @@ describe('dotconferences', () => {
 
       const actual = current(input);
 
-      expect(actual).toHaveProperty('author.name', 'Remy Sharp');
+      expect(actual).toHaveProperty('speakers', [{ name: 'Remy Sharp' }]);
       expect(actual).toHaveProperty('video.title', 'iframe abuse');
     });
 

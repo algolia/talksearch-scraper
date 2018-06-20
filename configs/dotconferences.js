@@ -37,17 +37,14 @@ module.exports = {
   transformData(rawRecord, helper) {
     let record = rawRecord;
 
-    record = helper.enrich(
-      record,
-      'playlist.title',
-      '{conference.name} {conference.year}'
-    );
-    _.update(record, 'conference.year', _.parseInt);
+    // Get conference name from the playlist title
+    record = helper.enrich(record, 'playlist.title', '{conference.name} {_}');
 
+    // Extract speaker name and video title from title
     record = helper.enrich(
       record,
       'video.title',
-      '{_} - {author.name} - {video.title}'
+      '{_} - {_speaker_} - {video.title}'
     );
 
     return record;
