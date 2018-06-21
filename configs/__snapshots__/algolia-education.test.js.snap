@@ -1,0 +1,11 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Algolia Education transformData Algolia Build 101 - Push Data - for Javascript developers 1`] = `
+Object {
+  "language": "Javascript",
+  "speakers": Array [],
+  "video": Object {
+    "title": "Push Data - for Javascript developers",
+  },
+}
+`;

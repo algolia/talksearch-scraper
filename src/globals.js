@@ -9,7 +9,7 @@ let ALGOLIA_APP_ID = null;
 const globals = {
   init(configName) {
     CONFIG_NAME = configName;
-    CONFIG = require(`../configs/${configName}.js`);
+    CONFIG = import(`../configs/${configName}.js`).default;
     READ_FROM_CACHE = process.env.READ_FROM_CACHE;
     WRITE_RESPONSE_LOGS = process.env.WRITE_RESPONSE_LOGS;
     YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;

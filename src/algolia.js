@@ -11,7 +11,6 @@ const defaultIndexSettings = {
   searchableAttributes: [
     'unordered(video.title)',
     'unordered(speakers.name)',
-    'unordered(author.name)',
     'unordered(caption.content)',
   ],
   // Disable typo-tolerance on dates (1970-2030)
@@ -259,7 +258,12 @@ async function run(records) {
     await copyIndexSync(indexName, indexTmpName);
 
     // Update settings
-    await setSettingsSync(indexTmpName, defaultIndexSettings);
+    let settings = defaultIndexSettings;
+    const transformSettings = _.get(globals.config(), 'transformSettings');
+    if (transformSettings) {
+      settings = transformSettings(settings);
+    }
+    await setSettingsSync(indexTmpName, settings);
 
     // Apply the diff between local and remote on the temp index
     const diffBatch = buildDiffBatch(remoteIds, records, indexTmpName);

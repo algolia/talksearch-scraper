@@ -1,6 +1,4 @@
-/* eslint-disable import/no-commonjs */
-import _ from 'lodash';
-module.exports = {
+export default {
   indexName: 'takeoffconference',
   playlists: [
     'PLuMK2S9sZg71QqVzwepG-bLBxcJWEzcW9', // 2018

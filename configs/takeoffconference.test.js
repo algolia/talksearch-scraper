@@ -1,4 +1,3 @@
-/* eslint-disable import/no-commonjs */
 import config from './takeoffconference.js';
 import helper from '../src/config-helper.js';
 

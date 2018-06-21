@@ -1,7 +1,6 @@
 /* eslint-disable import/no-commonjs */
 import module from './config-helper';
 import helper from './test-helper';
-import _ from 'lodash';
 
 let current;
 
@@ -136,32 +135,6 @@ describe('utils', () => {
     });
   });
 
-  describe('isAuthorName', () => {
-    beforeEach(() => {
-      current = module.isAuthorName;
-    });
-
-    describe('true', () => {
-      it('should validate simple names', () => {
-        const input = 'Piyush Chandra';
-
-        const actual = current(input);
-
-        expect(actual).toEqual(true);
-      });
-    });
-
-    describe('false', () => {
-      it('should reject sentences', () => {
-        const input = 'Are Chatbots ready for Enterprise?';
-
-        const actual = current(input);
-
-        expect(actual).toEqual(false);
-      });
-    });
-  });
-
   describe('split', () => {
     beforeEach(() => {
       current = module.split;
@@ -219,6 +192,16 @@ describe('utils', () => {
       const actual = current(input, 'video.title', 'Conference', 'Bar');
 
       expect(actual).toHaveProperty('video.title', 'foo');
+    });
+  });
+
+  describe('year', () => {
+    it('should return the year of a given date', () => {
+      const input = 1490979292;
+
+      const actual = module.year(input);
+
+      expect(actual).toEqual(2017);
     });
   });
 });

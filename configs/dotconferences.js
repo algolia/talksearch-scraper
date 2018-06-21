@@ -1,6 +1,4 @@
-/* eslint-disable import/no-commonjs */
-import _ from 'lodash';
-module.exports = {
+export default {
   indexName: 'dotconferences',
   playlists: [
     'PLMW8Xq7bXrG4OC1CZW7m-davg4p4ZCBmZ', // dotSwift 2018

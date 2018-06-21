@@ -1,5 +1,16 @@
 import _ from 'lodash';
+import dayjs from 'dayjs';
 
+/**
+ * Returns an object with (deep) keys matching the {named} patterns.
+ * Example:
+ *     helper.match('John Doe - 2018', '{video.title} - {conference.year}')
+ *     => { video: { title: 'John Doe' }, conference: { year: '2018' } }
+ * @param {String} input Initial string to parse
+ * @param {String} pattern Pattern string
+ * @returns {Object} Object containing matching keys
+ * Note: The special {_} pattern can be used to discard a match from the result.
+ **/
 function match(input, pattern) {
   // Identifying each group of {named} patterns
   const patternRegexp = /{.*?}/g;
@@ -27,6 +38,28 @@ function match(input, pattern) {
   return result;
 }
 
+/**
+ * Match patterns on a specific key of the record and enrich other keys with
+ * what is extracted.
+ * Example:
+ *     const input = { video: { title: 'John Doe - 2018' } }
+ *     helper.enrich(input, 'video.title', '{speaker.name} - {conference.year}')
+ *     => {
+ *          video: {
+ *            title: 'John Doe - 2018'
+ *          },
+ *          speaker: {
+ *            name: 'John Doe'
+ *          },
+ *          conference: {
+ *            year: '2018'
+ *          }
+ *        }
+ * @param {Object} record Initial object to enrich
+ * @param {String} path Path of the key to read
+ * @param {String} pattern Pattern to use for extracting
+ * @returns {Object} Original object, enriched with extracted patterns
+ **/
 function enrich(record, path, pattern) {
   const input = _.get(record, path);
   if (!input) {
@@ -45,17 +78,16 @@ function enrich(record, path, pattern) {
   return newRecord;
 }
 
-// Guess if the input name could be an author name
-function isAuthorName(input) {
-  const parts = _.split(input, ' ');
-  if (parts.length > 2) {
-    return false;
-  }
-
-  return true;
-}
-
-// Splits a string according to multiple separators
+/**
+ * Splits a string according to multiple separators
+ * Example:
+ *     helper.trim('foo / bar | baz', '/', '|');
+ *     => ['foo', 'bar', 'baz']
+ * @param {String} input Initial string to split
+ * @param {String} ...separators List of separators to use
+ * @returns {Array} Array of elements
+ * Note that this will trim all elements
+ **/
 function split(input, ...separators) {
   let results = [input];
 
@@ -70,7 +102,17 @@ function split(input, ...separators) {
   return results;
 }
 
-// Trim parts of a string from a given path in the object
+/**
+ * Remove all unwanted elements from a specific key of the element
+ * Example:
+ *     const input = { video: { title: 'foobar // 2018 conference' } }
+ *     helper.trimKey(input, 'video.title', '// 2018 conference');
+ * @param {String} rawRecord Initial object to modify
+ * @param {String} path Path of the key to update
+ * @param {String} ...trimList List of strings to remove
+ * @returns {Object} Modified object
+ * Note that this will trim the final value
+ **/
 function trimKey(rawRecord, path, ...trimList) {
   const record = rawRecord;
   let input = _.get(record, path);
@@ -87,12 +129,21 @@ function trimKey(rawRecord, path, ...trimList) {
   return record;
 }
 
+/**
+ * Returns a year from a timestamp
+ * @param {Number} timestamp Unix timestamp
+ * @returns {Number} YYYY-formatted year
+ **/
+function year(timestamp) {
+  return _.parseInt(dayjs(timestamp * 1000).format('YYYY'));
+}
+
 const ConfigHelper = {
   match,
   enrich,
-  isAuthorName,
   split,
   trimKey,
+  year,
 };
 
 export default ConfigHelper;

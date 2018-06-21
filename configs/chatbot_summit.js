@@ -1,6 +1,5 @@
-/* eslint-disable import/no-commonjs */
 import _ from 'lodash';
-module.exports = {
+export default {
   indexName: 'chatbot_summit',
   playlists: [
     'PLTr6zBI1qE6ZJLibC66IsVpfkW9LGC6j_', // 2018

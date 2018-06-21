@@ -2,4 +2,4 @@
 jest \
   --config ./jest.config.js \
   --no-cache \
-  ./src
+  ./configs/algolia-meetups.test.js

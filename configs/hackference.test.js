@@ -1,4 +1,3 @@
-/* eslint-disable import/no-commonjs */
 import config from './hackference.js';
 import helper from '../src/config-helper.js';
 

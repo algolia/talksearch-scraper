@@ -1,6 +1,5 @@
-/* eslint-disable import/no-commonjs */
 import _ from 'lodash';
-module.exports = {
+export default {
   indexName: 'hackference',
   playlists: [
     'PLJK9M6xgJ-uYeAO4rGRB_yDRFTXwVNWQY', // 2017

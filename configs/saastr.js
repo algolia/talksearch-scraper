@@ -1,5 +1,4 @@
-/* eslint-disable import/no-commonjs */
-module.exports = {
+export default {
   indexName: 'saastr',
   playlists: [
     'PLGlmLTbngJa87gZrq0LohHNQnG_a5t760', // 2018

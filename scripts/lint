@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
 set -e
 
-eslint ./src/*.js
+eslint ./src/*.js ./configs/*.js
