@@ -3,10 +3,5 @@
   "plugins": [
     "dynamic-import-node-sync",
     "@babel/plugin-proposal-object-rest-spread"
-  ],
-  "env": {
-    "test": {
-      "plugins": ["babel-plugin-rewire"]
-    }
-  }
+  ]
 }
