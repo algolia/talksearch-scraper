@@ -298,7 +298,6 @@ describe('youtube', () => {
           title: 'Video title',
           description: 'Video description',
           thumbnails: 'thumbnails',
-          defaultAudioLanguage: 'en',
         },
       };
 
@@ -307,7 +306,6 @@ describe('youtube', () => {
       expect(actual).toHaveProperty('title', 'Video title');
       expect(actual).toHaveProperty('description', 'Video description');
       expect(actual).toHaveProperty('thumbnails', 'thumbnails');
-      expect(actual).toHaveProperty('language', 'en');
     });
 
     it('should contain extended information', () => {
@@ -473,27 +471,23 @@ describe('youtube', () => {
 
   /* eslint-disable camelcase */
   describe('getCaptionsUrl', () => {
-    it('should get the url from a well formed data tree', async () => {
+    it('should get the first caption', async () => {
       mockInternal('getRawVideoInfo', {
         player_response: {
           captions: {
             playerCaptionsTracklistRenderer: {
-              captionTracks: [
-                { languageCode: 'fr', baseUrl: 'BAD' },
-                { languageCode: 'en', baseUrl: 'GOOD' },
-              ],
+              captionTracks: [{ baseUrl: 'GOOD' }, { baseUrl: 'BAD' }],
             },
           },
         },
       });
-      const input = 'videoId';
 
-      const actual = await module.internals.getCaptionsUrl(input);
+      const actual = await module.internals.getCaptionsUrl('anything');
 
       expect(actual).toEqual('GOOD');
     });
 
-    it('should return undefined if no caption url', async () => {
+    it('should return false if no captionTracks', async () => {
       mockInternal('getRawVideoInfo', {
         player_response: {
           captions: {
@@ -503,11 +497,10 @@ describe('youtube', () => {
           },
         },
       });
-      const input = 'videoId';
 
-      const actual = await module.internals.getCaptionsUrl(input);
+      const actual = await module.internals.getCaptionsUrl();
 
-      expect(actual).toEqual(undefined);
+      expect(actual).toEqual(false);
     });
   });
   /* eslint-enable camelcase */

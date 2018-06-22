@@ -25,11 +25,9 @@ const defaultIndexSettings = {
     'asc(caption.start)',
   ],
   attributesForFaceting: [
-    'author.name',
     'speakers.name',
     'conference.name',
     'conference.year',
-    'video.language',
     'video.hasManualCaptions',
     'video.id',
     'playlist.id',

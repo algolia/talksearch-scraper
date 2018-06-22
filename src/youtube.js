@@ -351,7 +351,6 @@ const internals = {
       title: _.get(data, 'snippet.title'),
       description: _.get(data, 'snippet.description'),
       thumbnails: _.get(data, 'snippet.thumbnails'),
-      language: _.get(data, 'snippet.defaultAudioLanguage'),
       publishedDate,
       popularity,
       duration,
@@ -414,7 +413,15 @@ const internals = {
         rawData,
         'player_response.captions.playerCaptionsTracklistRenderer.captionTracks'
       );
-      return _.get(_.find(captionList, { languageCode: 'en' }), 'baseUrl');
+      if (_.has(captionList, 'length') && captionList.length > 1) {
+        pulse.emit(
+          'warning',
+          'Some videos have more than one caption track',
+          `https://youtu.be/${videoId} has ${captionList.length}`
+        );
+      }
+      // Take the first caption available
+      return _.get(_.first(captionList), 'baseUrl', false);
     } catch (err) {
       pulse.emit('error', err, `getCaptionsUrl(${videoId})`);
       return false;
@@ -430,6 +437,15 @@ const internals = {
   async getCaptions(videoId) {
     try {
       const captionUrl = await this.getCaptionsUrl(videoId);
+
+      if (!captionUrl) {
+        pulse.emit(
+          'warning',
+          'Some videos have no captions',
+          `https://youtu.be/${videoId}`
+        );
+        return [];
+      }
 
       const xml = await axios.get(captionUrl);
       diskLogger.write(`captions/${videoId}.xml`, xml.data);

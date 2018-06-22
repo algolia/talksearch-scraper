@@ -1,0 +1,14 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`USI transformData Pour faire naître une idée - Cédric Villani, à l'USI 1`] = `
+Object {
+  "speakers": Array [
+    Object {
+      "name": "Cédric Villani",
+    },
+  ],
+  "video": Object {
+    "title": "Pour faire naître une idée",
+  },
+}
+`;

@@ -27,11 +27,16 @@ function match(input, pattern) {
 
   // Linking each match to its named value
   const matches = input.match(regexp);
-  const result = {};
-  _.each(_.slice(matches, 1), (needle, index) => {
-    _.set(result, namedGroups[index], needle);
-  });
 
+  // No match found
+  if (!matches) {
+    return false;
+  }
+
+  const result = {};
+  _.each(namedGroups, (namedGroup, index) => {
+    result[namedGroup] = matches[index + 1];
+  });
   // Discard the _ ignore pattern
   delete result._;
 
@@ -61,6 +66,7 @@ function match(input, pattern) {
  * @returns {Object} Original object, enriched with extracted patterns
  **/
 function enrich(record, path, pattern) {
+  const newRecord = record;
   const input = _.get(record, path);
   if (!input) {
     return record;
@@ -68,12 +74,16 @@ function enrich(record, path, pattern) {
 
   const matches = match(input, pattern);
 
-  // Special handling of speakers
-  if (matches._speaker_) {
-    matches.speakers = [{ name: matches._speaker_ }];
-    delete matches._speaker_;
-  }
-  const newRecord = _.merge(record, matches);
+  // Update the keys with the new values
+  _.each(matches, (value, key) => {
+    let newKey = key;
+    let newValue = value;
+    if (key === '_speaker_') {
+      newValue = [{ name: value }];
+      newKey = 'speakers';
+    }
+    _.set(newRecord, newKey, newValue);
+  });
 
   return newRecord;
 }

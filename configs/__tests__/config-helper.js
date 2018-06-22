@@ -42,7 +42,7 @@ describe('configHelper', () => {
 
       const actual = current(input, pattern);
 
-      expect(actual).toHaveProperty('video.title', 'A CSS Search Engine');
+      expect(actual['video.title']).toEqual('A CSS Search Engine');
     });
 
     it('allows the _ ignore wilcard', () => {
@@ -53,6 +53,15 @@ describe('configHelper', () => {
 
       expect(actual).toHaveProperty('name', 'Bar');
       expect(actual).not.toHaveProperty('_');
+    });
+
+    it('returns false if no match', () => {
+      const input = 'Foo // Bar';
+      const pattern = '{_} - {name}';
+
+      const actual = current(input, pattern);
+
+      expect(actual).toEqual(false);
     });
   });
 
@@ -118,6 +127,21 @@ describe('configHelper', () => {
 
     it('it converts speakers to an array with names', () => {
       const record = {
+        video: {
+          title: 'Tim Carry - bar',
+        },
+      };
+      const path = 'video.title';
+      const pattern = '{_speaker_} - {video.title}';
+
+      const actual = current(record, path, pattern);
+
+      expect(actual).toHaveProperty('speakers', [{ name: 'Tim Carry' }]);
+    });
+
+    it('replace the existing list of speakers', () => {
+      const record = {
+        speakers: [{ name: 'foo' }, { name: 'bar' }],
         video: {
           title: 'Tim Carry - bar',
         },
