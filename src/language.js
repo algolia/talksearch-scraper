@@ -212,7 +212,7 @@ const module = {
     return newVideos;
   },
   internals,
-  cache
+  cache,
 };
 
 export default module;

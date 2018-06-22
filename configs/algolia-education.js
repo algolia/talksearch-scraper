@@ -1,7 +1,10 @@
 import _ from 'lodash';
 export default {
   indexName: 'algolia-education',
-  playlists: ['PLuHdbqhRgWHIVm1e43_7mKUJw3UIreV84'],
+  playlists: [
+    'PLuHdbqhRgWHIVm1e43_7mKUJw3UIreV84', // Algolia 101
+    'PLuHdbqhRgWHJDATsVq_Mrj3NjIRjREiM1', // Discover Algolia
+  ],
   transformData(rawRecord, helper) {
     let record = rawRecord;
 
