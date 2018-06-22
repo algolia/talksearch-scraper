@@ -1,6 +1,6 @@
 import module from './youtube';
 import helper from './test-helper';
-const mockInternal = helper.mockInternal(module);
+const mockInternal = helper.mock(module.internals);
 
 jest.mock('./disk-logger');
 jest.mock('./fileutils');

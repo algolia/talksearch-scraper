@@ -1,8 +1,8 @@
-function mockInternal(module) {
+function mock(module) {
   return function(methodName, value) {
-    return jest.spyOn(module.internals, methodName).mockReturnValue(value);
+    return jest.spyOn(module, methodName).mockReturnValue(value);
   };
 }
 
-export { mockInternal };
-export default { mockInternal };
+export { mock };
+export default { mock };

@@ -4,9 +4,7 @@ import helper from './test-helper';
 
 let current;
 
-describe('utils', () => {
-  beforeEach(helper.globalBeforeEach);
-
+describe('configHelper', () => {
   describe('match', () => {
     beforeEach(() => {
       current = module.match;
