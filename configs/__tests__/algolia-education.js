@@ -1,5 +1,5 @@
-import config from './algolia-education.js';
-import helper from '../src/config-helper.js';
+import config from '../algolia-education.js';
+import helper from '../config-helper.js';
 
 describe('Algolia Education', () => {
   describe('transformData', () => {

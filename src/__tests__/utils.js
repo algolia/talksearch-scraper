@@ -1,5 +1,4 @@
-/* eslint-disable import/no-commonjs */
-import module from './utils';
+import module from '../utils';
 import _ from 'lodash';
 
 describe('utils', () => {

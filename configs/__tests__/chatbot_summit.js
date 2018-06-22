@@ -1,5 +1,5 @@
-import config from './chatbot_summit.js';
-import helper from '../src/config-helper.js';
+import config from '../chatbot_summit.js';
+import helper from '../config-helper.js';
 
 describe('Chatbot Summit', () => {
   describe('transformData', () => {

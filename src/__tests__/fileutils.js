@@ -1,6 +1,5 @@
-/* eslint-disable import/no-commonjs */
-import module from './fileutils';
-import helper from './test-helper';
+import module from '../fileutils';
+import helper from '../test-helper';
 const mock = helper.mock(module);
 
 describe('fileutils', () => {

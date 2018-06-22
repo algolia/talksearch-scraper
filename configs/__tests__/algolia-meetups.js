@@ -1,6 +1,6 @@
 import _ from 'lodash';
-import config from './algolia-meetups.js';
-import helper from '../src/config-helper.js';
+import config from '../algolia-meetups.js';
+import helper from '../config-helper.js';
 
 describe('Algolia Meetups', () => {
   describe('transformData', () => {

@@ -1,6 +1,4 @@
-/* eslint-disable import/no-commonjs */
-import module from './config-helper';
-import helper from './test-helper';
+import module from '../config-helper';
 
 let current;
 

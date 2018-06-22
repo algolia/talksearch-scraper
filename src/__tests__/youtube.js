@@ -1,15 +1,15 @@
-import module from './youtube';
-import helper from './test-helper';
+import module from '../youtube';
+import helper from '../test-helper';
 const mockInternal = helper.mock(module.internals);
 
-jest.mock('./disk-logger');
-jest.mock('./fileutils');
+jest.mock('../disk-logger');
+jest.mock('../fileutils');
 
 import axios from 'axios';
 jest.mock('axios');
 
-jest.mock('./pulse');
-import pulse from './pulse';
+jest.mock('../pulse');
+import pulse from '../pulse';
 pulse.emit = jest.fn();
 
 const objectContaining = expect.objectContaining;

@@ -2,7 +2,7 @@ import _ from 'lodash';
 import dayjs from 'dayjs';
 import globals from './globals';
 import nodeObjectHash from 'node-object-hash';
-import configHelper from './config-helper';
+import configHelper from '../configs/config-helper';
 import language from '../src/language';
 
 const internals = {

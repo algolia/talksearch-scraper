@@ -1,12 +1,12 @@
-import module from './transformer';
-import helper from './test-helper';
+import module from '../transformer';
+import helper from '../test-helper';
 const mockInternal = helper.mock(module.internals);
 
 jest.mock('node-object-hash');
 import nodeObjectHash from 'node-object-hash';
 
-jest.mock('./language');
-import language from './language';
+jest.mock('../language');
+import language from '../language';
 
 describe('transform', () => {
   describe('internals', () => {

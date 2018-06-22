@@ -1,5 +1,5 @@
-import config from './hackference.js';
-import helper from '../src/config-helper.js';
+import config from '../hackference.js';
+import helper from '../config-helper.js';
 
 describe('hackference', () => {
   describe('transformData', () => {

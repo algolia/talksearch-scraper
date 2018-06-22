@@ -1,24 +1,15 @@
-import module from './language';
-import helper from './test-helper';
+import module from '../language';
+import helper from '../test-helper';
 const mockInternal = helper.mock(module.internals);
 const mockCache = helper.mock(module.cache);
 
-jest.mock('./disk-logger');
+jest.mock('../disk-logger');
 
-jest.mock('./globals');
-import globals from './globals';
+jest.mock('../globals');
+import globals from '../globals';
 
-jest.mock('./fileutils');
-import fileutils from './fileutils';
-
-// jest.mock('@google-cloud/language');
-// import googleCloudLanguage from '@google-cloud/language';
-// const mockAnalyzeEntities = jest.fn();
-// googleCloudLanguage.LanguageServiceClient = function() {
-//   return {
-//     analyzeEntities: mockAnalyzeEntities,
-//   };
-// };
+jest.mock('../fileutils');
+import fileutils from '../fileutils';
 
 describe('language', () => {
   describe('cache', () => {

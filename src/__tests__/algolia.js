@@ -1,5 +1,4 @@
-/* eslint-disable import/no-commonjs */
-import module from './algolia';
+import module from '../algolia';
 
 describe('algolia', () => {
   describe('getLocalObjectIDs', () => {

@@ -1,5 +1,5 @@
-import config from './takeoffconference.js';
-import helper from '../src/config-helper.js';
+import config from '../takeoffconference.js';
+import helper from '../config-helper.js';
 
 describe('takeoffconference', () => {
   describe('transformData', () => {

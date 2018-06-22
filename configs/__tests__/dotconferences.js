@@ -1,5 +1,5 @@
-import config from './dotconferences.js';
-import helper from '../src/config-helper.js';
+import config from '../dotconferences.js';
+import helper from '../config-helper.js';
 
 describe('dotconferences', () => {
   describe('transformData', () => {
