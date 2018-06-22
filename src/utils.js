@@ -78,4 +78,4 @@ const module = {
   },
 };
 
-export default module;
+export default _.bindAll(module, _.functions(module));

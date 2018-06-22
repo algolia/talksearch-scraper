@@ -2,7 +2,7 @@ const WRITE_RESPONSE_LOGS = process.env.WRITE_RESPONSE_LOGS;
 import fileutils from './fileutils';
 import _ from 'lodash';
 
-const DiskLogger = {
+const module = {
   /**
    * Log the API return data to disk
    *
@@ -27,4 +27,4 @@ const DiskLogger = {
   },
 };
 
-export default DiskLogger;
+export default module;

@@ -235,7 +235,6 @@ const internals = {
 
       return videoData;
     } catch (err) {
-      console.info(err);
       pulse.emit('error', err, `getVideosData(${userVideoId})`);
       return {};
     }
@@ -458,7 +457,7 @@ const internals = {
 };
 
 const module = {
-  internals,
+  internals: _.bindAll(internals, _.functions(internals)),
   async getVideos() {
     const shouldReadFromCache = globals.readFromCache();
 

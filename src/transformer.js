@@ -184,16 +184,13 @@ const internals = {
 };
 
 const module = {
-  internals,
+  internals: _.bindAll(internals, _.functions(internals)),
   async run(inputVideos) {
-    const enrichVideos = this.internals.enrichVideos;
-    const recordsFromVideo = this.internals.recordFromVideo;
-
     // Enrich videos
-    const videos = await enrichVideos(inputVideos);
+    const videos = await this.internals.enrichVideos(inputVideos);
 
     // Convert videos to records
-    const records = _.flatten(_.map(videos, recordsFromVideo));
+    const records = _.flatten(_.map(videos, this.internals.recordsFromVideo));
 
     return records;
   },

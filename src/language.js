@@ -183,6 +183,8 @@ const internals = {
 };
 
 const module = {
+  internals: _.bindAll(internals, _.functions(internals)),
+  cache: _.bindAll(cache, _.functions(cache)),
   /**
    * Enrich all videos in the list and return the enriched list
    * @param {Array} videos List of videos
@@ -211,8 +213,6 @@ const module = {
     pulse.emit('enrich:end');
     return newVideos;
   },
-  internals,
-  cache,
 };
 
 export default module;

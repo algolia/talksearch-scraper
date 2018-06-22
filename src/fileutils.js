@@ -1,4 +1,5 @@
 import stringify from 'json-stable-stringify';
+import _ from 'lodash';
 import fs from 'fs';
 import path from 'path';
 import mkdirpCallback from 'mkdirp';
@@ -31,7 +32,7 @@ const module = {
   },
 
   /**
-   * Writes an object to JSON on dist
+   * Writes an object to JSON on disk
    * @param {String} destination Filepath to write the file to
    * @param {Object} data Object to convert to json and write to disk
    * @returns {Void}
@@ -58,4 +59,4 @@ const module = {
   },
 };
 
-export default module;
+export default _.bindAll(module, _.functions(module));
