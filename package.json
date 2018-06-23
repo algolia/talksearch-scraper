@@ -37,7 +37,7 @@
     "youtube-captions-scraper": "1.0.2"
   },
   "devDependencies": {
-    "babel-eslint": "8.0.3",
+    "babel-eslint": "8.2.5",
     "eslint": "4.13.1",
     "eslint-config-algolia": "13.0.1",
     "eslint-config-prettier": "2.9.0",
