@@ -5,39 +5,9 @@ import chalk from 'chalk';
 import pAll from 'p-all';
 import pulse from './pulse';
 import globals from './globals';
+import defaultIndexSettings from './algolia.settings';
 let client;
 let indexes = {};
-const defaultIndexSettings = {
-  searchableAttributes: [
-    'unordered(video.title)',
-    'unordered(speakers.name)',
-    'unordered(caption.content)',
-  ],
-  // Disable typo-tolerance on dates (1970-2030)
-  disableTypoToleranceOnWords: _.times(60, year => `${1970 + year}`),
-  customRanking: [
-    'desc(video.hasCaptions)',
-    'desc(video.popularity.score)',
-    'desc(video.hasManualCaptions)',
-    'desc(video.publishedDate.day)',
-    'desc(video.duration.minutes)',
-    'asc(video.positionInPlaylist)',
-    'asc(caption.start)',
-  ],
-  attributesForFaceting: [
-    'speakers.name',
-    'conference.name',
-    'conference.year',
-    'video.hasManualCaptions',
-    'video.id',
-    'playlist.id',
-    'playlist.title',
-    'channel.id',
-    'channel.title',
-  ],
-  distinct: true,
-  attributeForDistinct: 'video.id',
-};
 
 function getLocalObjectIDs(records) {
   return _.map(records, 'objectID');
