@@ -1,6 +1,8 @@
 import indexing from 'algolia-indexing';
 import _ from 'lodash';
 import globals from './globals';
+import pulse from './pulse';
+import chalk from 'chalk';
 import defaultIndexSettings from './algolia.settings';
 
 export default {
@@ -17,7 +19,11 @@ export default {
       settings = transformSettings(settings);
     }
 
-    indexing.onAny(console.log);
+    console.info(chalk.blue('Pushing to Algolia'));
+    const context = {};
+    indexing.onAny((event, data) => {
+      pulse.emit(`algolia:${event}`, data, context);
+    });
 
     indexing.fullAtomic(credentials, records, settings);
   },
