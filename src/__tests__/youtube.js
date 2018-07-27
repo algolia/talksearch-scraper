@@ -1,6 +1,6 @@
 import module from '../youtube';
 import helper from '../test-helper';
-const mockInternal = helper.mock(module.internals);
+const mock = helper.mock(module);
 
 jest.mock('../disk-logger');
 jest.mock('../fileutils');
@@ -19,7 +19,7 @@ describe('youtube', () => {
   describe('getPlaylistData', () => {
     it('return an object with playlist data', async () => {
       const playlistId = 42;
-      mockInternal('get', {
+      mock('get', {
         items: [
           {
             snippet: {
@@ -30,7 +30,7 @@ describe('youtube', () => {
         ],
       });
 
-      const actual = await module.internals.getPlaylistData(playlistId);
+      const actual = await module.getPlaylistData(playlistId);
 
       expect(actual).toHaveProperty('id', 42);
       expect(actual).toHaveProperty('title', 'foo');
@@ -40,13 +40,13 @@ describe('youtube', () => {
 
   describe('getVideosFromPlaylist', () => {
     it('should get all videos from the unique page', async () => {
-      mockInternal('getPlaylistData', { nextPageToken: null });
-      mockInternal('getVideosFromPlaylistPage', [
+      mock('getPlaylistData', { nextPageToken: null });
+      mock('getVideosFromPlaylistPage', [
         { foo: 'bar' },
         { bar: 'baz' },
       ]);
 
-      const actual = await module.internals.getVideosFromPlaylist();
+      const actual = await module.getVideosFromPlaylist();
 
       expect(actual).toHaveLength(2);
       expect(actual[0]).toHaveProperty('foo', 'bar');
@@ -54,15 +54,15 @@ describe('youtube', () => {
     });
 
     it('should get all videos from several pages', async () => {
-      mockInternal('getPlaylistData');
-      mockInternal('get')
+      mock('getPlaylistData');
+      mock('get')
         .mockReturnValueOnce({ nextPageToken: 'token' })
         .mockReturnValueOnce({ nextPageToken: null });
-      mockInternal('getVideosFromPlaylistPage')
+      mock('getVideosFromPlaylistPage')
         .mockReturnValueOnce([{ key: 'foo' }, { key: 'bar' }])
         .mockReturnValueOnce([{ key: 'baz' }]);
 
-      const actual = await module.internals.getVideosFromPlaylist();
+      const actual = await module.getVideosFromPlaylist();
 
       expect(actual[0]).toHaveProperty('key', 'foo');
       expect(actual[1]).toHaveProperty('key', 'bar');
@@ -70,14 +70,14 @@ describe('youtube', () => {
     });
 
     it('should add the playlist data to each item', async () => {
-      mockInternal('getPlaylistData', 'playlistData');
-      mockInternal('get', { nextPageToken: null });
-      mockInternal('getVideosFromPlaylistPage', [
+      mock('getPlaylistData', 'playlistData');
+      mock('get', { nextPageToken: null });
+      mock('getVideosFromPlaylistPage', [
         { foo: 'bar' },
         { bar: 'baz' },
       ]);
 
-      const actual = await module.internals.getVideosFromPlaylist();
+      const actual = await module.getVideosFromPlaylist();
 
       expect(actual[0]).toHaveProperty('playlist', 'playlistData');
       expect(actual[1]).toHaveProperty('playlist', 'playlistData');
@@ -94,13 +94,13 @@ describe('youtube', () => {
           },
         ],
       };
-      mockInternal('getVideosData', {
+      mock('getVideosData', {
         foo: {
           video: { id: 'foo', title: 'foo bar' },
         },
       });
 
-      const actual = await module.internals.getVideosFromPlaylistPage(input);
+      const actual = await module.getVideosFromPlaylistPage(input);
 
       expect(actual[0]).toHaveProperty('video.id', 'foo');
       expect(actual[0]).toHaveProperty('video.positionInPlaylist', 42);
@@ -120,13 +120,13 @@ describe('youtube', () => {
           },
         ],
       };
-      mockInternal('getVideosData', {
+      mock('getVideosData', {
         foo: {
           video: { id: 'foo', title: 'foo bar' },
         },
       });
 
-      const actual = await module.internals.getVideosFromPlaylistPage(input);
+      const actual = await module.getVideosFromPlaylistPage(input);
 
       expect(actual).toHaveLength(1);
       expect(actual[0]).toHaveProperty('video.id', 'foo');
@@ -145,13 +145,13 @@ describe('youtube', () => {
           },
         ],
       };
-      mockInternal('getVideosData', {
+      mock('getVideosData', {
         bar: {
           video: { id: 'bar' },
         },
       });
 
-      await module.internals.getVideosFromPlaylistPage(input);
+      await module.getVideosFromPlaylistPage(input);
 
       expect(pulse.emit).toHaveBeenCalledWith('warning', anyString, [
         'https://youtu.be/foo',
@@ -170,7 +170,7 @@ describe('youtube', () => {
         ],
       };
 
-      await module.internals.getVideosFromPlaylistPage(input);
+      await module.getVideosFromPlaylistPage(input);
 
       expect(pulse.emit).toHaveBeenCalledWith('warning', anyString, anyString);
     });
@@ -181,7 +181,7 @@ describe('youtube', () => {
       const data = {};
       const captions = [];
 
-      const actual = module.internals.formatCaptions(data, captions);
+      const actual = module.formatCaptions(data, captions);
 
       expect(actual).toHaveProperty('hasCaptions', false);
     });
@@ -190,7 +190,7 @@ describe('youtube', () => {
       const data = {};
       const captions = [{}];
 
-      const actual = module.internals.formatCaptions(data, captions);
+      const actual = module.formatCaptions(data, captions);
 
       expect(actual).toHaveProperty('hasCaptions', true);
     });
@@ -203,7 +203,7 @@ describe('youtube', () => {
       };
       const captions = [];
 
-      const actual = module.internals.formatCaptions(data, captions);
+      const actual = module.formatCaptions(data, captions);
 
       expect(actual).toHaveProperty('hasManualCaptions', true);
     });
@@ -216,7 +216,7 @@ describe('youtube', () => {
       };
       const captions = [];
 
-      const actual = module.internals.formatCaptions(data, captions);
+      const actual = module.formatCaptions(data, captions);
 
       expect(actual).toHaveProperty('hasManualCaptions', false);
     });
@@ -234,7 +234,7 @@ describe('youtube', () => {
         },
       };
 
-      const actual = module.internals.formatPopularity(data);
+      const actual = module.formatPopularity(data);
 
       expect(actual).toHaveProperty('comments', 5);
       expect(actual).toHaveProperty('dislikes', 0);
@@ -252,7 +252,7 @@ describe('youtube', () => {
         },
       };
 
-      const actual = module.internals.formatDuration(data);
+      const actual = module.formatDuration(data);
 
       expect(actual).toHaveProperty('minutes', 4);
       expect(actual).toHaveProperty('seconds', 25);
@@ -268,7 +268,7 @@ describe('youtube', () => {
         },
       };
 
-      const actual = module.internals.formatChannel(data);
+      const actual = module.formatChannel(data);
 
       expect(actual).toHaveProperty('id', 'foo');
       expect(actual).toHaveProperty('title', 'bar');
@@ -277,22 +277,22 @@ describe('youtube', () => {
 
   describe('formatVideo', () => {
     it('should contain the videoId', () => {
-      mockInternal('formatCaptions');
-      mockInternal('formatPopularity');
-      mockInternal('formatDuration');
+      mock('formatCaptions');
+      mock('formatPopularity');
+      mock('formatDuration');
       const data = {
         id: 'foo',
       };
 
-      const actual = module.internals.formatVideo(data);
+      const actual = module.formatVideo(data);
 
       expect(actual).toHaveProperty('id', 'foo');
     });
 
     it('should contain base information', () => {
-      mockInternal('formatCaptions');
-      mockInternal('formatPopularity');
-      mockInternal('formatDuration');
+      mock('formatCaptions');
+      mock('formatPopularity');
+      mock('formatDuration');
       const data = {
         snippet: {
           title: 'Video title',
@@ -301,7 +301,7 @@ describe('youtube', () => {
         },
       };
 
-      const actual = module.internals.formatVideo(data);
+      const actual = module.formatVideo(data);
 
       expect(actual).toHaveProperty('title', 'Video title');
       expect(actual).toHaveProperty('description', 'Video description');
@@ -310,11 +310,11 @@ describe('youtube', () => {
 
     it('should contain extended information', () => {
       const data = {};
-      mockInternal('formatCaptions', { foo: 'bar' });
-      mockInternal('formatPopularity', 'popularity');
-      mockInternal('formatDuration', 'duration');
+      mock('formatCaptions', { foo: 'bar' });
+      mock('formatPopularity', 'popularity');
+      mock('formatDuration', 'duration');
 
-      const actual = module.internals.formatVideo(data);
+      const actual = module.formatVideo(data);
 
       expect(actual).toHaveProperty('popularity', 'popularity');
       expect(actual).toHaveProperty('duration', 'duration');
@@ -322,29 +322,29 @@ describe('youtube', () => {
     });
 
     it('should contain published date as timestamp', () => {
-      mockInternal('formatCaptions');
-      mockInternal('formatPopularity');
-      mockInternal('formatDuration');
+      mock('formatCaptions');
+      mock('formatPopularity');
+      mock('formatDuration');
       const data = {
         snippet: {
           publishedAt: '2018-03-16T16:04:29.000Z',
         },
       };
 
-      const actual = module.internals.formatVideo(data);
+      const actual = module.formatVideo(data);
 
       expect(actual).toHaveProperty('publishedDate', 1521216269);
     });
 
     it('should contain the video url', () => {
-      mockInternal('formatCaptions');
-      mockInternal('formatPopularity');
-      mockInternal('formatDuration');
+      mock('formatCaptions');
+      mock('formatPopularity');
+      mock('formatDuration');
       const data = {
         id: 'foo',
       };
 
-      const actual = module.internals.formatVideo(data);
+      const actual = module.formatVideo(data);
 
       expect(actual).toHaveProperty(
         'url',
@@ -355,55 +355,55 @@ describe('youtube', () => {
 
   describe('getVideosData', () => {
     it('calls /videos with only one id', async () => {
-      mockInternal('get');
+      mock('get');
       const input = 'foo';
 
-      await module.internals.getVideosData(input);
+      await module.getVideosData(input);
 
-      expect(module.internals.get).toHaveBeenCalledWith(
+      expect(module.get).toHaveBeenCalledWith(
         'videos',
         objectContaining({ id: 'foo' })
       );
     });
 
     it('calls /videos with several ids', async () => {
-      mockInternal('get');
+      mock('get');
       const input = ['foo', 'bar'];
 
-      await module.internals.getVideosData(input);
+      await module.getVideosData(input);
 
-      expect(module.internals.get).toHaveBeenCalledWith(
+      expect(module.get).toHaveBeenCalledWith(
         'videos',
         objectContaining({ id: 'foo,bar' })
       );
     });
 
     it('sets the channel key to each video', async () => {
-      mockInternal('formatVideo');
-      mockInternal('get', { items: [{ id: 'foo' }] });
-      mockInternal('formatChannel', 'channel info');
+      mock('formatVideo');
+      mock('get', { items: [{ id: 'foo' }] });
+      mock('formatChannel', 'channel info');
 
-      const actual = await module.internals.getVideosData();
+      const actual = await module.getVideosData();
 
       expect(actual).toHaveProperty('foo.channel', 'channel info');
     });
 
     it('sets the video key to each video', async () => {
-      mockInternal('formatChannel');
-      mockInternal('get', { items: [{ id: 'foo' }] });
-      mockInternal('formatVideo', 'video info');
+      mock('formatChannel');
+      mock('get', { items: [{ id: 'foo' }] });
+      mock('formatVideo', 'video info');
 
-      const actual = await module.internals.getVideosData();
+      const actual = await module.getVideosData();
 
       expect(actual).toHaveProperty('foo.video', 'video info');
     });
 
     it('sets the .captions key', async () => {
-      mockInternal('get', { items: [{ id: 'foo' }] });
-      mockInternal('formatDuration');
-      mockInternal('getCaptions', 'captions');
+      mock('get', { items: [{ id: 'foo' }] });
+      mock('formatDuration');
+      mock('getCaptions', 'captions');
 
-      const actual = await module.internals.getVideosData();
+      const actual = await module.getVideosData();
 
       expect(actual).toHaveProperty('foo.captions', 'captions');
     });
@@ -411,7 +411,7 @@ describe('youtube', () => {
 
   describe('getCaptions', () => {
     it('returns a list of captions', async () => {
-      mockInternal('getCaptionsUrl', '{caption_url}');
+      mock('getCaptionsUrl', '{caption_url}');
       jest.spyOn(axios, 'get').mockReturnValue({
         data: `<?xml version="1.0" encoding="utf-8"?>
 <transcript>
@@ -421,7 +421,7 @@ describe('youtube', () => {
 `,
       });
 
-      const actual = await module.internals.getCaptions(42);
+      const actual = await module.getCaptions(42);
 
       expect(axios.get).toHaveBeenCalledWith('{caption_url}');
       expect(actual).toHaveLength(2);
@@ -432,7 +432,7 @@ describe('youtube', () => {
     });
 
     it('removes HTML from captions', async () => {
-      mockInternal('getCaptionsUrl', '{caption_url}');
+      mock('getCaptionsUrl', '{caption_url}');
       jest.spyOn(axios, 'get').mockReturnValue({
         data: `<?xml version="1.0" encoding="utf-8"?>
 <transcript>
@@ -441,21 +441,21 @@ describe('youtube', () => {
 `,
       });
 
-      const actual = await module.internals.getCaptions(42);
+      const actual = await module.getCaptions(42);
 
       expect(actual[0]).toHaveProperty('content', 'foo bar');
     });
 
     it('returns an empty array if no url found', async () => {
-      mockInternal('getCaptionsUrl');
+      mock('getCaptionsUrl');
 
-      const actual = await module.internals.getCaptions(42);
+      const actual = await module.getCaptions(42);
 
       expect(actual).toEqual([]);
     });
 
     it('returns an empty array if no captions', async () => {
-      mockInternal('getCaptionsUrl', '{caption_url}');
+      mock('getCaptionsUrl', '{caption_url}');
       jest.spyOn(axios, 'get').mockReturnValue({
         data: `<?xml version="1.0" encoding="utf-8"?>
 <transcript>
@@ -463,7 +463,7 @@ describe('youtube', () => {
 `,
       });
 
-      const actual = await module.internals.getCaptions(42);
+      const actual = await module.getCaptions(42);
 
       expect(actual).toEqual([]);
     });
@@ -472,7 +472,7 @@ describe('youtube', () => {
   /* eslint-disable camelcase */
   describe('getCaptionsUrl', () => {
     it('should get the first caption', async () => {
-      mockInternal('getRawVideoInfo', {
+      mock('getRawVideoInfo', {
         player_response: {
           captions: {
             playerCaptionsTracklistRenderer: {
@@ -482,13 +482,13 @@ describe('youtube', () => {
         },
       });
 
-      const actual = await module.internals.getCaptionsUrl('anything');
+      const actual = await module.getCaptionsUrl('anything');
 
       expect(actual).toEqual('GOOD');
     });
 
     it('should return false if no captionTracks', async () => {
-      mockInternal('getRawVideoInfo', {
+      mock('getRawVideoInfo', {
         player_response: {
           captions: {
             playerCaptionsTracklistRenderer: {
@@ -498,7 +498,7 @@ describe('youtube', () => {
         },
       });
 
-      const actual = await module.internals.getCaptionsUrl();
+      const actual = await module.getCaptionsUrl();
 
       expect(actual).toEqual(false);
     });

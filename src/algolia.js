@@ -9,7 +9,7 @@ export default {
     const credentials = {
       apiKey: globals.algoliaApiKey(),
       appId: globals.algoliaAppId(),
-      indexName: 'atomic_test',
+      indexName: globals.configName(),
     };
 
     let settings = defaultIndexSettings;
@@ -20,6 +20,7 @@ export default {
 
     console.info(chalk.blue('Pushing to Algolia'));
     indexing.verbose();
+    indexing.config({ batchMaxSize: 100 });
     indexing.fullAtomic(credentials, records, settings);
   },
 };

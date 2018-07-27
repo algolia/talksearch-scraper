@@ -14,7 +14,7 @@ import _ from 'lodash';
 import { forEach, map } from 'p-iteration';
 const glob = pify(_glob);
 
-const internals = {
+export default {
   /**
    * Call a Youtube API endpoint with GET parameters
    *
@@ -470,22 +470,17 @@ const internals = {
       return [];
     }
   },
-};
 
-const module = {
-  internals: _.bindAll(internals, _.functions(internals)),
   async getVideos() {
     const shouldReadFromCache = globals.readFromCache();
 
     // Get videos either from disk cache or API
     const videos = shouldReadFromCache
-      ? await this.internals.getVideosFromCache()
-      : await this.internals.getVideosFromApi();
+      ? await this.getVideosFromCache()
+      : await this.getVideosFromApi();
 
     pulse.emit('youtube:videos', { videos });
 
     return videos;
   },
 };
-
-export default module;

@@ -2,7 +2,6 @@ import chalk from 'chalk';
 import _ from 'lodash';
 import pulse from './pulse';
 import globals from './globals';
-import ora from 'ora';
 import MultiProgressBar from 'multi-progress';
 const progressBars = new MultiProgressBar();
 const allBars = {};
@@ -52,54 +51,6 @@ const youtube = {
     allBars[name].tick();
   },
 };
-
-/* eslint-disable no-param-reassign */
-const algolia = {
-  onCopyIndexStart(data, context) {
-    context[data.eventId] = ora(
-      `Copying ${data.source} to ${data.destination}`
-    ).start();
-  },
-  onMoveIndexStart(data, context) {
-    context[data.eventId] = ora(
-      `Moving ${data.source} to ${data.destination}`
-    ).start();
-  },
-  onSetSettingsStart(data, context) {
-    context[data.eventId] = ora(
-      `Pushing settings to ${data.indexName}`
-    ).start();
-  },
-  onClearIndexStart(data, context) {
-    context[data.eventId] = ora(`Clearing index ${data.indexName}`).start();
-  },
-  onGetAllRecordsStart(data, context) {
-    context[data.eventId] = ora(
-      `Getting all objectIds from ${data.indexName}`
-    ).start();
-  },
-  onBatchStart(data, context) {
-    context[data.eventId] = ora(
-      `Starting batch of ${data.batchCount} operations`
-    ).start();
-  },
-  succeedEvent(data, context) {
-    context[data.eventId].succeed();
-  },
-};
-/* eslint-enable no-param-reassign */
-pulse.on('algolia:copyIndex:start', algolia.onCopyIndexStart);
-pulse.on('algolia:copyIndex:end', algolia.succeedEvent);
-pulse.on('algolia:moveIndex:start', algolia.onMoveIndexStart);
-pulse.on('algolia:moveIndex:end', algolia.succeedEvent);
-pulse.on('algolia:clearIndex:start', algolia.onClearIndexStart);
-pulse.on('algolia:clearIndex:end', algolia.succeedEvent);
-pulse.on('algolia:getAllRecords:start', algolia.onGetAllRecordsStart);
-pulse.on('algolia:getAllRecords:end', algolia.succeedEvent);
-pulse.on('algolia:batch:start', algolia.onBatchStart);
-pulse.on('algolia:batch:end', algolia.succeedEvent);
-pulse.on('algolia:setSettings:start', algolia.onSetSettingsStart);
-pulse.on('algolia:setSettings:end', algolia.succeedEvent);
 
 const language = {
   onEnrichStart(data) {

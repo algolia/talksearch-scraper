@@ -1,20 +1,15 @@
 let CONFIG = {};
 let CONFIG_NAME = null;
-let READ_FROM_CACHE = false;
-let WRITE_RESPONSE_LOGS = false;
-let YOUTUBE_API_KEY = null;
-let ALGOLIA_API_KEY = null;
-let ALGOLIA_APP_ID = null;
+const ALGOLIA_API_KEY = process.env.ALGOLIA_API_KEY;
+const ALGOLIA_APP_ID = process.env.ALGOLIA_APP_ID;
+const READ_FROM_CACHE = process.env.READ_FROM_CACHE || false;
+const WRITE_RESPONSE_LOGS = process.env.WRITE_RESPONSE_LOGS || false;
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 
 const globals = {
   init(configName) {
     CONFIG_NAME = configName;
     CONFIG = import(`../configs/${configName}.js`).default;
-    READ_FROM_CACHE = process.env.READ_FROM_CACHE;
-    WRITE_RESPONSE_LOGS = process.env.WRITE_RESPONSE_LOGS;
-    YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
-    ALGOLIA_API_KEY = process.env.ALGOLIA_API_KEY;
-    ALGOLIA_APP_ID = process.env.ALGOLIA_APP_ID;
   },
   readFromCache() {
     return READ_FROM_CACHE;
