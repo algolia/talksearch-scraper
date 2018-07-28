@@ -7,6 +7,8 @@ import queryString from 'query-string';
 import pMap from 'p-map';
 import youtube from '../src/youtube.js';
 import prettier from 'prettier';
+import algoliasearch from 'algoliasearch';
+import globals from '../src/globals';
 
 const newConfig = {
   // Open a prompt and wait for the answer
@@ -50,13 +52,9 @@ const newConfig = {
     memo.push(playlistId);
     return await this.getPlaylistIds(memo);
   },
-};
 
-(async () => {
-  try {
-    const configName = await newConfig.getConfigName();
-    const playlistIds = await newConfig.getPlaylistIds();
-
+  // Get the new config file content
+  async getConfigFileContent(configName, playlistIds) {
     // Get name of playlists along with ids
     const playlists = [];
     await pMap(playlistIds, async playlistId => {
@@ -84,11 +82,43 @@ const newConfig = {
       trailingComma: 'all',
     });
 
+    return newContent;
+  },
+
+  async createApiKey(configName) {
+    const client = algoliasearch(
+      globals.algoliaAppId(),
+      globals.algoliaApiKey()
+    );
+    const apiKey = await client.addApiKey(['search'], {
+      indexes: configName,
+      description: configName,
+    });
+
+    return apiKey;
+  },
+};
+
+(async () => {
+  try {
+    const configName = await newConfig.getConfigName();
+    const playlistIds = await newConfig.getPlaylistIds();
+
+    const configContent = await newConfig.getConfigFileContent(
+      configName,
+      playlistIds
+    );
+
     // Write to disk
-    fs.writeFileSync(`./configs/${configName}.js`, newContent);
+    fs.writeFileSync(`./configs/${configName}.js`, configContent);
     console.info(
       `${chalk.green('✔')} Config for ${chalk.green(configName)} saved.`
     );
+
+    // Create the API key
+    const apiKey = await newConfig.createApiKey(configName);
+    console.info(`indexName: ${chalk.blue(configName)}`);
+    console.info(`apiKey: ${chalk.green(apiKey)}`);
   } catch (err) {
     console.info(chalk.red('✘ ERROR:'));
     console.info(err.message);
