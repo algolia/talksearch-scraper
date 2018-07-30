@@ -91,11 +91,11 @@ const newConfig = {
       globals.algoliaApiKey()
     );
     const apiKey = await client.addApiKey(['search'], {
-      indexes: configName,
+      indexes: [configName],
       description: configName,
     });
 
-    return apiKey;
+    return apiKey.key;
   },
 };
 
@@ -122,6 +122,7 @@ const newConfig = {
   } catch (err) {
     console.info(chalk.red('✘ ERROR:'));
     console.info(err.message);
+    console.info(err);
     process.exit(1); // eslint-disable-line no-process-exit
   }
 })();
