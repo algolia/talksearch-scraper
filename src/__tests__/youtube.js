@@ -8,6 +8,9 @@ jest.mock('../fileutils');
 import axios from 'axios';
 jest.mock('axios');
 
+jest.mock('../globals');
+import globals from '../globals';
+
 jest.mock('../pulse');
 import pulse from '../pulse';
 pulse.emit = jest.fn();
@@ -38,13 +41,58 @@ describe('youtube', () => {
     });
   });
 
+  describe('getVideos', () => {
+    beforeEach(() => {
+      globals.readFromCache.mockReturnValue(false);
+      globals.config.mockReturnValue({});
+    });
+
+    it('should get videos from API by default', async () => {
+      mock('getVideosFromApi', 'videos_from_api');
+
+      const actual = await module.getVideos();
+
+      expect(actual).toEqual('videos_from_api');
+    });
+
+    it('should get videos from cache if enabled', async () => {
+      globals.readFromCache.mockReturnValue(true);
+      mock('getVideosFromCache', 'cached_videos');
+
+      const actual = await module.getVideos();
+
+      expect(actual).toEqual('cached_videos');
+    });
+
+    it('should emit a youtube:video event with the videos', async () => {
+      mock('getVideosFromApi', 'video_list');
+
+      await module.getVideos();
+
+      expect(pulse.emit).toHaveBeenCalledWith('youtube:videos', {
+        videos: 'video_list',
+      });
+    });
+
+    it('should exclude videos defined in the blockList', async () => {
+      mock('getVideosFromApi', 'raw_video_list');
+      mock('applyBlockList', 'filtered_video_list');
+      globals.config.mockReturnValue({ blockList: 'my_block_list' });
+
+      const actual = await module.getVideos();
+
+      expect(module.applyBlockList).toHaveBeenCalledWith(
+        'raw_video_list',
+        'my_block_list'
+      );
+      expect(actual).toEqual('filtered_video_list');
+    });
+  });
+
   describe('getVideosFromPlaylist', () => {
     it('should get all videos from the unique page', async () => {
       mock('getPlaylistData', { nextPageToken: null });
-      mock('getVideosFromPlaylistPage', [
-        { foo: 'bar' },
-        { bar: 'baz' },
-      ]);
+      mock('getVideosFromPlaylistPage', [{ foo: 'bar' }, { bar: 'baz' }]);
 
       const actual = await module.getVideosFromPlaylist();
 
@@ -72,10 +120,7 @@ describe('youtube', () => {
     it('should add the playlist data to each item', async () => {
       mock('getPlaylistData', 'playlistData');
       mock('get', { nextPageToken: null });
-      mock('getVideosFromPlaylistPage', [
-        { foo: 'bar' },
-        { bar: 'baz' },
-      ]);
+      mock('getVideosFromPlaylistPage', [{ foo: 'bar' }, { bar: 'baz' }]);
 
       const actual = await module.getVideosFromPlaylist();
 

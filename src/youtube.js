@@ -471,13 +471,30 @@ export default {
     }
   },
 
+  applyBlockList(videos, blockList) {
+  },
+
+  /**
+   * Get all videos as configured in the current config
+   *
+   * Note: You should always call globals.init(configName) before running this
+   * method, so it can get all the required data
+   *
+   * @returns {Array} All videos of the current config
+   **/
   async getVideos() {
     const shouldReadFromCache = globals.readFromCache();
 
     // Get videos either from disk cache or API
-    const videos = shouldReadFromCache
+    let videos = shouldReadFromCache
       ? await this.getVideosFromCache()
       : await this.getVideosFromApi();
+
+    // Exclude some videos
+    const blockList = globals.config().blockList;
+    if (blockList) {
+      videos = this.applyBlockList(videos, blockList);
+    }
 
     pulse.emit('youtube:videos', { videos });
 
