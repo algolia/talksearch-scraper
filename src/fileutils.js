@@ -3,23 +3,22 @@ import _ from 'lodash';
 import fs from 'fs';
 import path from 'path';
 import mkdirpCallback from 'mkdirp';
+import glob from 'glob';
 import pify from 'pify';
 const writeFile = pify(fs.writeFile);
-const readFile = pify(fs.readFile);
 const mkdirp = pify(mkdirpCallback);
 
 const module = {
   /**
-   * Write some content to disk
-   * @param {String} destination Destination filepatth
-   * @param {String} content Content to write to the file
-   * @returns {Void}
-   * Note: It will create the directories if needed
+   * Wrapper around glob() to work as a promise
+   * @param {String} pattern Glob pattern to match
+   * @returns {Array} Array of files matching
    **/
-  async write(destination, content) {
-    await mkdirp(path.dirname(destination));
-    await writeFile(destination, content);
-    return;
+  async glob(pattern) {
+    if (!this._glob) {
+      this._glob = pify(glob);
+    }
+    return await this._glob(pattern);
   },
 
   /**
@@ -28,19 +27,10 @@ const module = {
    * @returns {String} Content of the file read
    **/
   async read(filepath) {
-    return await readFile(filepath);
-  },
-
-  /**
-   * Writes an object to JSON on disk
-   * @param {String} destination Filepath to write the file to
-   * @param {Object} data Object to convert to json and write to disk
-   * @returns {Void}
-   **/
-  async writeJson(destination, data) {
-    const content = stringify(data, { space: 2 });
-    await this.write(destination, content);
-    return;
+    if (!this._readFile) {
+      this._readFile = pify(fs.readfile);
+    }
+    return await this._readFile(filepath);
   },
 
   /**
@@ -56,6 +46,31 @@ const module = {
     } catch (err) {
       return null;
     }
+  },
+
+  /**
+   * Write some content to disk
+   * @param {String} destination Destination filepatth
+   * @param {String} content Content to write to the file
+   * @returns {Void}
+   * Note: It will create the directories if needed
+   **/
+  async write(destination, content) {
+    await mkdirp(path.dirname(destination));
+    await writeFile(destination, content);
+    return;
+  },
+
+  /**
+   * Writes an object to JSON on disk
+   * @param {String} destination Filepath to write the file to
+   * @param {Object} data Object to convert to json and write to disk
+   * @returns {Void}
+   **/
+  async writeJson(destination, data) {
+    const content = stringify(data, { space: 2 });
+    await this.write(destination, content);
+    return;
   },
 };
 

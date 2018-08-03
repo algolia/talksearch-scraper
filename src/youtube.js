@@ -9,10 +9,8 @@ import parseIsoDuration from 'parse-iso-duration';
 import pify from 'pify';
 import pulse from './pulse';
 import qs from 'query-string';
-import _glob from 'glob';
 import _ from 'lodash';
 import { forEach, map } from 'p-iteration';
-const glob = pify(_glob);
 
 export default {
   /**
@@ -139,8 +137,14 @@ export default {
   async getVideosFromPlaylistPage(pageResults) {
     // Page results will give us the videoId and matching position in playlist
     const allVideoInfoFromPage = {};
+    const blockList = _.get(globals.config(), 'blockList', []);
     _.each(pageResults.items, video => {
       const videoId = _.get(video, 'contentDetails.videoId');
+      // Skipping videos that should be excluded
+      if (_.includes(blockList, videoId)) {
+        return;
+      }
+
       const positionInPlaylist = _.get(video, 'snippet.position');
 
       // Some videos are sometimes set several times in the same playlist page,
@@ -244,17 +248,24 @@ export default {
     const config = globals.config();
     const configName = globals.configName();
     const playlists = config.playlists;
+    const blockList = config.blockList;
 
     const playlistGlob =
       playlists.length === 1
         ? `${playlists[0]}.json`
         : `{${playlists.join(',')}}.json`;
 
-    const playlistFiles = await glob(
+    const playlistFiles = await fileutils.glob(
       `./cache/${configName}/youtube/${playlistGlob}`
     );
+    let videos = _.flatten(await map(playlistFiles, fileutils.readJson));
 
-    const videos = _.flatten(await map(playlistFiles, fileutils.readJson));
+    // Remove videos that are part of the blocklist
+    if (blockList) {
+      videos = _.reject(videos, video =>
+        _.includes(blockList, _.get(video, 'video.id'))
+      );
+    }
 
     return videos;
   },
@@ -471,9 +482,6 @@ export default {
     }
   },
 
-  applyBlockList(videos, blockList) {
-  },
-
   /**
    * Get all videos as configured in the current config
    *
@@ -486,15 +494,9 @@ export default {
     const shouldReadFromCache = globals.readFromCache();
 
     // Get videos either from disk cache or API
-    let videos = shouldReadFromCache
+    const videos = shouldReadFromCache
       ? await this.getVideosFromCache()
       : await this.getVideosFromApi();
-
-    // Exclude some videos
-    const blockList = globals.config().blockList;
-    if (blockList) {
-      videos = this.applyBlockList(videos, blockList);
-    }
 
     pulse.emit('youtube:videos', { videos });
 

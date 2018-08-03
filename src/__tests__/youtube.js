@@ -5,11 +5,14 @@ const mock = helper.mock(module);
 jest.mock('../disk-logger');
 jest.mock('../fileutils');
 
-import axios from 'axios';
 jest.mock('axios');
+import axios from 'axios';
 
 jest.mock('../globals');
 import globals from '../globals';
+
+jest.mock('../fileutils');
+import fileutils from '../fileutils';
 
 jest.mock('../pulse');
 import pulse from '../pulse';
@@ -17,6 +20,7 @@ pulse.emit = jest.fn();
 
 const objectContaining = expect.objectContaining;
 const anyString = expect.any(String);
+const anything = expect.anything();
 
 describe('youtube', () => {
   describe('formatCaptions', () => {
@@ -346,20 +350,6 @@ describe('youtube', () => {
         videos: 'video_list',
       });
     });
-
-    it('should exclude videos defined in the blockList', async () => {
-      mock('getVideosFromApi', 'raw_video_list');
-      mock('applyBlockList', 'filtered_video_list');
-      globals.config.mockReturnValue({ blockList: 'my_block_list' });
-
-      const actual = await module.getVideos();
-
-      expect(module.applyBlockList).toHaveBeenCalledWith(
-        'raw_video_list',
-        'my_block_list'
-      );
-      expect(actual).toEqual('filtered_video_list');
-    });
   });
 
   describe('getVideosData', () => {
@@ -415,6 +405,53 @@ describe('youtube', () => {
       const actual = await module.getVideosData();
 
       expect(actual).toHaveProperty('foo.captions', 'captions');
+    });
+  });
+
+  describe('getVideosFromCache', () => {
+    it('should return all videos from one playlist', async () => {
+      globals.configName.mockReturnValue('my_config');
+      globals.config.mockReturnValue({ playlists: ['foo'] });
+      fileutils.glob.mockReturnValue(['cache_file']);
+      fileutils.readJson.mockReturnValue([{ video: 'video_from_cache' }]);
+
+      const actual = await module.getVideosFromCache();
+
+      expect(actual).toEqual([{ video: 'video_from_cache' }]);
+      expect(fileutils.glob).toHaveBeenCalledWith(
+        './cache/my_config/youtube/foo.json'
+      );
+    });
+
+    it('should return all videos from several playlists', async () => {
+      globals.configName.mockReturnValue('my_config');
+      globals.config.mockReturnValue({ playlists: ['foo', 'bar'] });
+      fileutils.glob.mockReturnValue(['cache_file1', 'cache_file2']);
+      fileutils.readJson.mockReturnValueOnce([{ video: 'video_from_cache1' }]);
+      fileutils.readJson.mockReturnValueOnce([{ video: 'video_from_cache2' }]);
+
+      const actual = await module.getVideosFromCache();
+
+      expect(actual).toEqual([
+        { video: 'video_from_cache1' },
+        { video: 'video_from_cache2' },
+      ]);
+    });
+
+    it('should exclude videos from the blockList', async () => {
+      globals.config.mockReturnValue({
+        playlists: ['playlistId'],
+        blockList: ['bar'],
+      });
+      fileutils.glob.mockReturnValue(['glob_path']);
+      fileutils.readJson.mockReturnValue([
+        { video: { id: 'foo' } },
+        { video: { id: 'bar' } },
+      ]);
+
+      const actual = await module.getVideosFromCache();
+
+      expect(actual).toEqual([{ video: { id: 'foo' } }]);
     });
   });
 
@@ -479,6 +516,54 @@ describe('youtube', () => {
       expect(actual[0]).toHaveProperty('video.id', 'foo');
       expect(actual[0]).toHaveProperty('video.positionInPlaylist', 42);
       expect(actual[0]).toHaveProperty('video.title', 'foo bar');
+    });
+
+    it('should discard videos excluded by blockList', async () => {
+      const input = {
+        items: [
+          {
+            contentDetails: { videoId: 'foo' },
+            snippet: { position: 42 },
+          },
+          {
+            contentDetails: { videoId: 'bar' },
+            snippet: { position: 43 },
+          },
+        ],
+      };
+      mock('getVideosData', {
+        foo: {
+          video: { id: 'bar', title: 'foo bar' },
+        },
+      });
+      globals.config.mockReturnValue({ blockList: ['foo'] });
+
+      const actual = await module.getVideosFromPlaylistPage(input);
+
+      expect(actual).toHaveLength(1);
+      expect(actual[0]).toHaveProperty('video.id', 'bar');
+    });
+
+    it('should not discard videos if no blocklist', async () => {
+      const input = {
+        items: [
+          {
+            contentDetails: { videoId: 'foo' },
+            snippet: { position: 42 },
+          },
+        ],
+      };
+      mock('getVideosData', {
+        foo: {
+          video: { id: 'foo', title: 'foo bar' },
+        },
+      });
+      globals.config.mockReturnValue({ blockList: null });
+
+      const actual = await module.getVideosFromPlaylistPage(input);
+
+      expect(actual).toHaveLength(1);
+      expect(actual[0]).toHaveProperty('video.id', 'foo');
     });
 
     it('should discard videos with no details', async () => {
