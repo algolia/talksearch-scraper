@@ -32,6 +32,8 @@ const module = {
   attributesToSnippet: ['caption.content:8'],
   distinct: true,
   attributeForDistinct: 'video.id',
+  highlightPreTag: '<em class="ats-highlight">',
+  highlightPostTag: '</em>',
   disableTypoToleranceOnWords: yearsTypoDisabled,
 };
 

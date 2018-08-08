@@ -28,7 +28,7 @@ const module = {
    **/
   async read(filepath) {
     if (!this._readFile) {
-      this._readFile = pify(fs.readfile);
+      this._readFile = pify(fs.readFile);
     }
     return await this._readFile(filepath);
   },

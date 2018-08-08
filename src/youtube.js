@@ -455,6 +455,12 @@ const module = {
    * @returns {Array} Array of captions
    **/
   async getCaptions(videoId) {
+    // Get the content of an XML <text> node, which itself can contain
+    // HTML-encoded tags
+    function getContent($node) {
+      return cheerio.load($node.text()).text();
+    }
+
     try {
       const captionUrl = await this.getCaptionsUrl(videoId);
 
@@ -472,11 +478,16 @@ const module = {
 
       const $ = cheerio.load(xml.data, { xmlMode: true });
       const texts = $('text');
-      const captions = _.map(texts, node => {
-        const $node = $(node);
-        const content = cheerio.load($node.text()).text();
-        const start = _.round(parseFloat($node.attr('start')), 2);
-        const duration = _.round(parseFloat($node.attr('dur')), 2);
+      const captions = _.map(texts, (node, index) => {
+        // We take nodes two at a time for the content
+        const $thisNode = $(node);
+        const $nextNode = $(texts[index + 1]);
+        const thisContent = getContent($thisNode);
+        const nextContent = getContent($nextNode);
+        const content = _.trim(`${thisContent} ${nextContent}`);
+
+        const start = _.round(parseFloat($thisNode.attr('start')), 2);
+        const duration = _.round(parseFloat($thisNode.attr('dur')), 2);
         return {
           content,
           start,

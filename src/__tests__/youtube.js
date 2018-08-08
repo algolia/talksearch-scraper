@@ -20,7 +20,6 @@ pulse.emit = jest.fn();
 
 const objectContaining = expect.objectContaining;
 const anyString = expect.any(String);
-const anything = expect.anything();
 
 describe('youtube', () => {
   describe('formatCaptions', () => {
@@ -218,7 +217,10 @@ describe('youtube', () => {
       expect(actual).toHaveLength(2);
       expect(actual[0]).toHaveProperty('start', 13.28);
       expect(actual[0]).toHaveProperty('duration', 5.5);
-      expect(actual[0]).toHaveProperty('content', 'foo bar');
+      expect(actual[0]).toHaveProperty('content', 'foo bar bar baz');
+
+      expect(actual[1]).toHaveProperty('start', 16.02);
+      expect(actual[1]).toHaveProperty('duration', 5.25);
       expect(actual[1]).toHaveProperty('content', 'bar baz');
     });
 
