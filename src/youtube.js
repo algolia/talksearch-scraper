@@ -424,15 +424,25 @@ export default {
         rawData,
         'player_response.captions.playerCaptionsTracklistRenderer.captionTracks'
       );
-      if (_.has(captionList, 'length') && captionList.length > 1) {
-        pulse.emit(
-          'warning',
-          'Some videos have more than one caption track',
-          `https://youtu.be/${videoId} has ${captionList.length}`
-        );
+
+      // No captions
+      if (_.isEmpty(captionList)) {
+        return false;
       }
+
+      // Try to get one that is not Automatic Speech Recognition
+      const manualCaptions = _.reject(
+        captionList,
+        caption => _.get(caption, 'kind') === 'asr'
+      );
+      if (!_.isEmpty(manualCaptions)) {
+        return _.get(_.first(manualCaptions), 'baseUrl');
+      }
+
+      // Return the first one by default
+      return _.get(_.first(captionList), 'baseUrl');
+
       // Take the first caption available
-      return _.get(_.first(captionList), 'baseUrl', false);
     } catch (err) {
       pulse.emit('error', err, `getCaptionsUrl(${videoId})`);
       return false;

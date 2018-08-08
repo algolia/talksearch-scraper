@@ -262,12 +262,16 @@ describe('youtube', () => {
 
   /* eslint-disable camelcase */
   describe('getCaptionsUrl', () => {
-    it('should get the first caption', async () => {
+    it('should prefer the manual captions ', async () => {
       mock('getRawVideoInfo', {
         player_response: {
           captions: {
             playerCaptionsTracklistRenderer: {
-              captionTracks: [{ baseUrl: 'GOOD' }, { baseUrl: 'BAD' }],
+              captionTracks: [
+                { baseUrl: 'BAD', kind: 'asr' },
+                { baseUrl: 'GOOD' },
+                { baseUrl: 'BAD' },
+              ],
             },
           },
         },
