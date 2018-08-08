@@ -10,7 +10,9 @@
     "index": "babel-node ./scripts/index.js",
     "index:cache": "READ_FROM_CACHE=1 babel-node ./scripts/index.js",
     "index:logs": "WRITE_RESPONSE_LOGS=1 babel-node ./scripts/index.js",
-    "new": "babel-node ./scripts/new-config.js"
+    "new": "babel-node ./scripts/new-config.js",
+    "precommit": "yarn lint",
+    "prepush": "yarn test"
   },
   "repository": {
     "type": "git",
@@ -63,6 +65,7 @@
     "eslint-plugin-import": "^2.11.0",
     "eslint-plugin-jest": "^21.15.1",
     "eslint-plugin-prettier": "^2.6.0",
+    "husky": "^0.14.3",
     "inquirer": "^6.0.0",
     "jest": "^23.0.0",
     "prettier": "1.9.2",

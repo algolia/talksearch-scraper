@@ -1,11 +1,10 @@
 import _ from 'lodash';
 import dayjs from 'dayjs';
 import globals from './globals';
-import nodeObjectHash from 'node-object-hash';
 import configHelper from '../configs/config-helper';
 import language from '../src/language';
 
-const internals = {
+const module = {
   /**
    * Compute a value for ranking based on the various popularity metrics.
    * So far, it's an easy sum of all interactions (like/dislike/views/comments,
@@ -94,8 +93,6 @@ const internals = {
    * @returns {Array} An array of all records for this video, one per caption
    **/
   recordsFromVideo(video) {
-    const hashObject = nodeObjectHash().hash;
-
     // Enhanced video data
     const videoDetails = { ...video.video };
     _.set(
@@ -138,7 +135,6 @@ const internals = {
         caption: captionDetails,
       };
 
-      record.objectID = hashObject(record);
       return record;
     });
   },
@@ -181,19 +177,16 @@ const internals = {
 
     return videos;
   },
-};
 
-const module = {
-  internals: _.bindAll(internals, _.functions(internals)),
   async run(inputVideos) {
     // Enrich videos
-    const videos = await this.internals.enrichVideos(inputVideos);
+    const videos = await this.enrichVideos(inputVideos);
 
     // Convert videos to records
-    const records = _.flatten(_.map(videos, this.internals.recordsFromVideo));
+    const records = _.flatten(_.map(videos, this.recordsFromVideo));
 
     return records;
   },
 };
 
-export default module;
+export default _.bindAll(module, _.functions(module));

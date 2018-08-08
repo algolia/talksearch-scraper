@@ -106,7 +106,8 @@ const cache = {
   },
 };
 
-const internals = {
+const module = {
+  cache: _.bindAll(cache, _.functions(cache)),
   /**
    * Return a singleton instance of the Google Language client
    * @returns {Object} Instance of LanguageServiceClient
@@ -180,11 +181,7 @@ const internals = {
 
     return _.map(matchingEntities, speaker => ({ name: speaker.name }));
   },
-};
 
-const module = {
-  internals: _.bindAll(internals, _.functions(internals)),
-  cache: _.bindAll(cache, _.functions(cache)),
   /**
    * Enrich all videos in the list and return the enriched list
    * @param {Array} videos List of videos
@@ -192,7 +189,7 @@ const module = {
    **/
   async enrichVideos(videos) {
     const grabCache = this.cache.grab;
-    const enrichVideo = this.internals.enrichVideo;
+    const enrichVideo = this.enrichVideo;
     const releaseCache = this.cache.release;
 
     pulse.emit('enrich:start', { videoCount: videos.length });
@@ -215,4 +212,4 @@ const module = {
   },
 };
 
-export default module;
+export default _.bindAll(module, _.functions(module));

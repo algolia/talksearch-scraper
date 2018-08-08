@@ -1,6 +1,6 @@
 import module from '../language';
 import helper from '../test-helper';
-const mockInternal = helper.mock(module.internals);
+const mock = helper.mock(module);
 const mockCache = helper.mock(module.cache);
 
 jest.mock('../disk-logger');
@@ -148,70 +148,62 @@ describe('language', () => {
     });
   });
 
-  describe('internals', () => {
-    describe('enrichVideo', () => {
-      it('should set the speakers to the list of speakers', async () => {
-        mockInternal('getSpeakers', 'my_speakers');
-        const input = {};
+  describe('enrichVideo', () => {
+    it('should set the speakers to the list of speakers', async () => {
+      mock('getSpeakers', 'my_speakers');
+      const input = {};
 
-        const actual = await module.internals.enrichVideo(input);
+      const actual = await module.enrichVideo(input);
 
-        expect(actual).toHaveProperty('speakers', 'my_speakers');
-      });
+      expect(actual).toHaveProperty('speakers', 'my_speakers');
+    });
+  });
+
+  describe('getEntities', () => {
+    it('should return cache value if exists', async () => {
+      mockCache('read', 'foo');
+
+      const actual = await module.getEntities('anything', 'anything');
+
+      expect(actual).toEqual('foo');
     });
 
-    describe('getEntities', () => {
-      it('should return cache value if exists', async () => {
-        mockCache('read', 'foo');
-
-        const actual = await module.internals.getEntities(
-          'anything',
-          'anything'
-        );
-
-        expect(actual).toEqual('foo');
+    it('should return entities as returned by the API', async () => {
+      mockCache('read');
+      const mockAnalyzeEntities = jest
+        .fn()
+        .mockReturnValue([{ entities: 'foo' }]);
+      mock('client', {
+        analyzeEntities: mockAnalyzeEntities,
       });
 
-      it('should return entities as returned by the API', async () => {
-        mockCache('read');
-        const mockAnalyzeEntities = jest
-          .fn()
-          .mockReturnValue([{ entities: 'foo' }]);
-        mockInternal('client', {
-          analyzeEntities: mockAnalyzeEntities,
-        });
+      const actual = await module.getEntities('videoId', 'my sentence');
 
-        const actual = await module.internals.getEntities(
-          'videoId',
-          'my sentence'
-        );
+      expect(mockAnalyzeEntities).toHaveBeenCalledWith({
+        document: {
+          content: 'my sentence',
+          type: 'PLAIN_TEXT',
+        },
+      });
+      expect(actual).toEqual('foo');
+    });
 
-        expect(mockAnalyzeEntities).toHaveBeenCalledWith({
-          document: {
-            content: 'my sentence',
-            type: 'PLAIN_TEXT',
-          },
-        });
-        expect(actual).toEqual('foo');
+    it('should save value to cache', async () => {
+      mockCache('write');
+      const mockAnalyzeEntities = jest
+        .fn()
+        .mockReturnValue([{ entities: 'foo' }]);
+      mock('client', {
+        analyzeEntities: mockAnalyzeEntities,
       });
 
-      it('should save value to cache', async () => {
-        mockCache('write');
-        const mockAnalyzeEntities = jest
-          .fn()
-          .mockReturnValue([{ entities: 'foo' }]);
-        mockInternal('client', {
-          analyzeEntities: mockAnalyzeEntities,
-        });
+      await module.getEntities('videoId', 'my sentence');
 
-        await module.internals.getEntities('videoId', 'my sentence');
-
-        expect(module.cache.write).toHaveBeenCalledWith(
-          'videoId',
-          'my sentence',
-          'foo'
-        );
-      });
+      expect(module.cache.write).toHaveBeenCalledWith(
+        'videoId',
+        'my sentence',
+        'foo'
+      );
     });
 
     describe('getSpeakers', () => {
@@ -222,15 +214,15 @@ describe('language', () => {
             id: 'videoId',
           },
         };
-        const mockGetEntities = mockInternal('getEntities');
+        const mockGetEntities = mock('getEntities');
 
-        await module.internals.getSpeakers(input);
+        await module.getSpeakers(input);
 
         expect(mockGetEntities).toHaveBeenCalledWith('videoId', 'title');
       });
 
       it('should return all speakers', async () => {
-        mockInternal('getEntities', [
+        mock('getEntities', [
           {
             type: 'PERSON',
             mentions: [{ type: 'PROPER' }],
@@ -252,7 +244,7 @@ describe('language', () => {
           },
         ]);
 
-        const actual = await module.internals.getSpeakers();
+        const actual = await module.getSpeakers();
 
         expect(actual[0]).toHaveProperty('name', 'Tim Carry');
         expect(actual[1]).toHaveProperty('name', 'John Doe');
@@ -297,7 +289,7 @@ describe('language', () => {
 
     it('should call enrichVideo on each video', async () => {
       const input = [{ name: 'foo' }, { name: 'bar' }];
-      const mockEnrichVideo = mockInternal('enrichVideo');
+      const mockEnrichVideo = mock('enrichVideo');
       mockEnrichVideo.mockImplementation(video => ({ ...video, done: true }));
 
       const actual = await module.enrichVideos(input);

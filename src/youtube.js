@@ -6,13 +6,12 @@ import fileutils from './fileutils';
 import globals from './globals';
 import pMap from 'p-map';
 import parseIsoDuration from 'parse-iso-duration';
-import pify from 'pify';
 import pulse from './pulse';
 import qs from 'query-string';
 import _ from 'lodash';
 import { forEach, map } from 'p-iteration';
 
-export default {
+const module = {
   /**
    * Call a Youtube API endpoint with GET parameters
    *
@@ -513,3 +512,5 @@ export default {
     return videos;
   },
 };
+
+export default _.bindAll(module, _.functions(module));
