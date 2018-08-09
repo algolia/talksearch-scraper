@@ -5,7 +5,7 @@ import globals from './globals';
 import MultiProgressBar from 'multi-progress';
 const progressBars = new MultiProgressBar();
 const allBars = {};
-const warnings = [];
+let warnings = [];
 
 function newBar(id, color, max) {
   const name = chalk[color](id);
@@ -84,6 +84,7 @@ const generic = {
 
 function displayWarnings() {
   updateCursor();
+
   const groupedWarnings = _.groupBy(warnings, 'title');
   _.each(groupedWarnings, (typedWarnings, title) => {
     console.info(chalk.red(title));
@@ -94,6 +95,8 @@ function displayWarnings() {
 
     console.info(chalk.yellow(displayedResult));
   });
+
+  warnings = [];
 }
 
 pulse.on('error', generic.onError);
