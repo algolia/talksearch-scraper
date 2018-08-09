@@ -150,7 +150,15 @@ const module = {
       content: input,
       type: 'PLAIN_TEXT',
     };
-    const results = await this.client().analyzeEntities({ document: options });
+
+    let results;
+    try {
+      results = await this.client().analyzeEntities({ document: options });
+    } catch (err) {
+      pulse.emit('warning', err.details, `https://youtu.be/${videoId}`);
+      return [];
+    }
+
     const entities = results[0].entities;
 
     // Save the API result to disk for debug purposes

@@ -11,6 +11,12 @@ import globals from '../globals';
 jest.mock('../fileutils');
 import fileutils from '../fileutils';
 
+jest.mock('../pulse');
+import pulse from '../pulse';
+pulse.emit = jest.fn();
+
+const anyString = expect.any(String);
+
 describe('language', () => {
   describe('cache', () => {
     beforeEach(() => {
@@ -203,6 +209,25 @@ describe('language', () => {
         'videoId',
         'my sentence',
         'foo'
+      );
+    });
+
+    it('should emit a warning if the client throws an error ', async () => {
+      mock('client', {
+        analyzeEntities() {
+          const err = new Error();
+          err.details = 'details';
+          throw err;
+        },
+      });
+
+      const actual = await module.getEntities('my_video', 'anything');
+
+      expect(actual).toEqual([]);
+      expect(pulse.emit).toHaveBeenCalledWith(
+        'warning',
+        'details',
+        'https://youtu.be/my_video'
       );
     });
 

@@ -24,6 +24,7 @@ const argv = yargs
 
     // Transform videos in records
     const records = await transformer.run(videos);
+    progress.displayWarnings();
 
     // Push records
     await algolia.run(records);
