@@ -365,6 +365,7 @@ const module = {
       title: _.get(data, 'snippet.title'),
       description: _.get(data, 'snippet.description'),
       thumbnails: _.get(data, 'snippet.thumbnails'),
+      languageCode: _.get(data, 'snippet.defaultAudioLanguage'),
       publishedDate,
       popularity,
       duration,
@@ -500,6 +501,7 @@ const module = {
 
         return {
           content,
+          languageCode,
           start: thisStart,
           duration,
         };

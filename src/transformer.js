@@ -73,16 +73,15 @@ const module = {
       };
     }
 
-    const content = caption.content;
-    const duration = _.round(caption.duration, 2);
+    // Round start to exact second because we can't jump to more precise than
+    // that
     const start = _.floor(caption.start);
     const url = this.getCaptionUrl(videoId, start);
 
     return {
-      content,
-      duration,
-      start,
+      ...caption,
       position,
+      start,
       url,
     };
   },

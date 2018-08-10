@@ -35,14 +35,6 @@ describe('transform', () => {
       expect(actual).toHaveProperty('start', 5);
     });
 
-    it('should set the duration', () => {
-      const input = { duration: 4.86001 };
-
-      const actual = module.getCaptionDetails(input);
-
-      expect(actual).toHaveProperty('duration', 4.86);
-    });
-
     it('should set the content', () => {
       const input = { content: 'foo' };
 

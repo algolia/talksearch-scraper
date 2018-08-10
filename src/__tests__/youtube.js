@@ -144,6 +144,7 @@ describe('youtube', () => {
           title: 'Video title',
           description: 'Video description',
           thumbnails: 'thumbnails',
+          defaultAudioLanguage: 'fr',
         },
       };
 
@@ -152,6 +153,7 @@ describe('youtube', () => {
       expect(actual).toHaveProperty('title', 'Video title');
       expect(actual).toHaveProperty('description', 'Video description');
       expect(actual).toHaveProperty('thumbnails', 'thumbnails');
+      expect(actual).toHaveProperty('languageCode', 'fr');
     });
 
     it('should contain extended information', () => {
