@@ -22,7 +22,9 @@ function match(input, pattern) {
   );
 
   // Convert the simple pattern (using {}), to a real regexp
-  const stringRegexp = pattern.replace(patternRegexp, '(.*)');
+  let stringRegexp = pattern.replace(patternRegexp, '(.*)');
+  // Also escape characters in the pattern that should not be treated as regexp
+  stringRegexp = _.replace(stringRegexp, /\|/g, '\\|');
   const regexp = new RegExp(stringRegexp);
 
   // Linking each match to its named value

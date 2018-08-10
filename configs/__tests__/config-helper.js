@@ -63,6 +63,15 @@ describe('configHelper', () => {
 
       expect(actual).toEqual(false);
     });
+
+    it('extract patterns when pipes in the input', () => {
+      const input = 'Foo | XXX | Bar';
+      const pattern = 'Foo | XXX | {name}';
+
+      const actual = current(input, pattern);
+
+      expect(actual).toHaveProperty('name', 'Bar');
+    });
   });
 
   describe('enrich', () => {

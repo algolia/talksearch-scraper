@@ -34,6 +34,7 @@ const module = {
   attributeForDistinct: 'video.id',
   highlightPreTag: '<em class="ats-highlight">',
   highlightPostTag: '</em>',
+  advancedSyntax: true,
   disableTypoToleranceOnWords: yearsTypoDisabled,
 };
 
