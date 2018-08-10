@@ -260,26 +260,70 @@ describe('youtube', () => {
 
       expect(actual).toEqual([]);
     });
+
+    it('calls getCaptionsUrl with the specified language', async () => {
+      mock('getCaptionsUrl');
+
+      await module.getCaptions(42, 'myLanguage');
+
+      expect(module.getCaptionsUrl).toHaveBeenCalledWith(42, 'myLanguage');
+    });
   });
 
   /* eslint-disable camelcase */
   describe('getCaptionsUrl', () => {
-    it('should prefer the manual captions ', async () => {
+    function mockCaptions(captionTracks) {
       mock('getRawVideoInfo', {
         player_response: {
           captions: {
             playerCaptionsTracklistRenderer: {
-              captionTracks: [
-                { baseUrl: 'BAD', kind: 'asr' },
-                { baseUrl: 'GOOD' },
-                { baseUrl: 'BAD' },
-              ],
+              captionTracks,
             },
           },
         },
       });
+    }
 
-      const actual = await module.getCaptionsUrl('anything');
+    it('should take manual captions in the specified language', async () => {
+      mockCaptions([
+        { baseUrl: 'BAD', languageCode: 'ru', kind: 'asr' },
+        { baseUrl: 'BAD', languageCode: 'fr' },
+        { baseUrl: 'GOOD', languageCode: 'ru' },
+      ]);
+
+      const actual = await module.getCaptionsUrl('anything', 'ru');
+
+      expect(actual).toEqual('GOOD');
+    });
+
+    it('should then try automatic caption in the specified language', async () => {
+      mockCaptions([
+        { baseUrl: 'BAD', languageCode: 'fr' },
+        { baseUrl: 'GOOD', languageCode: 'ru', kind: 'asr' },
+      ]);
+
+      const actual = await module.getCaptionsUrl('anything', 'ru');
+
+      expect(actual).toEqual('GOOD');
+    });
+
+    it('should take the first manual caption if no language specified', async () => {
+      mockCaptions([
+        { baseUrl: 'BAD', languageCode: 'en', kind: 'asr' },
+        { baseUrl: 'GOOD', languageCode: 'fr' },
+      ]);
+
+      const actual = await module.getCaptionsUrl('anything', 'ru');
+
+      expect(actual).toEqual('GOOD');
+    });
+    it('should take the first automatic  caption if no language specified and no manual one', async () => {
+      mockCaptions([
+        { baseUrl: 'GOOD', languageCode: 'en', kind: 'asr' },
+        { baseUrl: 'BAD', languageCode: 'fr', kind: 'asr' },
+      ]);
+
+      const actual = await module.getCaptionsUrl('anything', 'ru');
 
       expect(actual).toEqual('GOOD');
     });
@@ -411,6 +455,18 @@ describe('youtube', () => {
       const actual = await module.getVideosData();
 
       expect(actual).toHaveProperty('foo.captions', 'captions');
+    });
+
+    it('asks for captions for the video language', async () => {
+      mock('get', {
+        items: [{ id: 'foo', snippet: { defaultAudioLanguage: 'ru' } }],
+      });
+      mock('formatDuration');
+      mock('getCaptions', 'captions');
+
+      await module.getVideosData();
+
+      expect(module.getCaptions).toHaveBeenCalledWith('foo', 'ru');
     });
   });
 

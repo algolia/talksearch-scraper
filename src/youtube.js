@@ -224,7 +224,12 @@ const module = {
       const videoData = {};
       await pMap(items, async data => {
         const videoId = data.id;
-        const captions = await this.getCaptions(videoId);
+        // TOTEST
+        const defaultAudioLanguage = _.get(
+          data,
+          'snippet.defaultAudioLanguage'
+        );
+        const captions = await this.getCaptions(videoId, defaultAudioLanguage);
 
         const channelMetadata = this.formatChannel(data);
         const videoMetadata = this.formatVideo(data, captions);
@@ -414,34 +419,35 @@ const module = {
    * Get the caption url for a given videoId
    *
    * @param {String} videoId Id of the video
+   * @param {String} languageCode Language of the caption
    * @returns {String} Url to get the video caption file
    **/
-  async getCaptionsUrl(videoId) {
+  async getCaptionsUrl(videoId, languageCode) {
     try {
       const rawData = await this.getRawVideoInfo(videoId);
-      const captionList = _.get(
+      const allCaptions = _.get(
         rawData,
         'player_response.captions.playerCaptionsTracklistRenderer.captionTracks'
       );
 
       // No captions
-      if (_.isEmpty(captionList)) {
+      if (_.isEmpty(allCaptions)) {
         return false;
       }
 
-      // Try to get one that is not Automatic Speech Recognition
       const manualCaptions = _.reject(
-        captionList,
+        allCaptions,
         caption => _.get(caption, 'kind') === 'asr'
       );
-      if (!_.isEmpty(manualCaptions)) {
-        return _.get(_.first(manualCaptions), 'baseUrl');
-      }
+      const automaticCaptions = _.difference(allCaptions, manualCaptions);
 
-      // Return the first one by default
-      return _.get(_.first(captionList), 'baseUrl');
+      const matchingCaption =
+        _.find(manualCaptions, { languageCode }) ||
+        _.find(automaticCaptions, { languageCode }) ||
+        _.first(manualCaptions) ||
+        _.first(automaticCaptions);
 
-      // Take the first caption available
+      return _.get(matchingCaption, 'baseUrl');
     } catch (err) {
       pulse.emit('error', err, `getCaptionsUrl(${videoId})`);
       return false;
@@ -452,9 +458,10 @@ const module = {
    * Get captions for a given videoId
    *
    * @param {String} videoId Id of the video
+   * @param {String} languageCode Language of the caption
    * @returns {Array} Array of captions
    **/
-  async getCaptions(videoId) {
+  async getCaptions(videoId, languageCode) {
     // Get the content of an XML <text> node, which itself can contain
     // HTML-encoded tags
     function getContent($node) {
@@ -462,7 +469,7 @@ const module = {
     }
 
     try {
-      const captionUrl = await this.getCaptionsUrl(videoId);
+      const captionUrl = await this.getCaptionsUrl(videoId, languageCode);
 
       if (!captionUrl) {
         pulse.emit(
