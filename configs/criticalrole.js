@@ -6,6 +6,26 @@ export default {
     'PL1tiwbzkOjQz7D0l_eLJGAISVtcL7oRu_', // Campaign 1: Vox Machina
     'PL1tiwbzkOjQxD0jjAE7PsWoaCrs0EkBH2', // Campaign 2: The Mighty Nein
   ],
+  transformSettings(rawSettings) {
+    return {
+      ...rawSettings,
+      customRanking: [
+        'desc(video.hasCaptions)',
+        'asc(video.campaignNumber)',
+        'asc(video.episodeNumber)',
+        'asc(caption.start)',
+      ],
+      attributesForFaceting: [
+        'video.id',
+        'caption.languageCode',
+        'caption.playerName',
+        'playlist.id',
+        'playlist.title',
+        'channel.id',
+        'channel.title',
+      ],
+    };
+  },
   transformData(rawRecord, helper) {
     let record = rawRecord;
 

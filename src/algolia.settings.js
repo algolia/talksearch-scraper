@@ -24,6 +24,8 @@ const module = {
     'conference.year',
     'video.hasManualCaptions',
     'video.id',
+    'video.languageCode',
+    'caption.languageCode',
     'playlist.id',
     'playlist.title',
     'channel.id',
