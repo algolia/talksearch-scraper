@@ -224,7 +224,6 @@ const module = {
       const videoData = {};
       await pMap(items, async data => {
         const videoId = data.id;
-        // TOTEST
         const defaultAudioLanguage = _.get(
           data,
           'snippet.defaultAudioLanguage'
@@ -488,16 +487,20 @@ const module = {
       const captions = _.map(texts, (node, index) => {
         // We take nodes two at a time for the content
         const $thisNode = $(node);
-        const $nextNode = $(texts[index + 1]);
         const thisContent = getContent($thisNode);
-        const nextContent = getContent($nextNode);
-        const content = _.trim(`${thisContent} ${nextContent}`);
+        const thisStart = _.round($thisNode.attr('start'), 2);
+        const thisDuration = parseFloat($thisNode.attr('dur'));
 
-        const start = _.round(parseFloat($thisNode.attr('start')), 2);
-        const duration = _.round(parseFloat($thisNode.attr('dur')), 2);
+        const $nextNode = $(texts[index + 1]);
+        const nextContent = getContent($nextNode);
+        const nextDuration = parseFloat($nextNode.attr('dur') || 0);
+
+        const content = _.trim(`${thisContent} ${nextContent}`);
+        const duration = _.round(thisDuration + nextDuration, 2);
+
         return {
           content,
-          start,
+          start: thisStart,
           duration,
         };
       });

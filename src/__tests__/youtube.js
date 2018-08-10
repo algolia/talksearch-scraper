@@ -216,7 +216,7 @@ describe('youtube', () => {
       expect(axios.get).toHaveBeenCalledWith('{caption_url}');
       expect(actual).toHaveLength(2);
       expect(actual[0]).toHaveProperty('start', 13.28);
-      expect(actual[0]).toHaveProperty('duration', 5.5);
+      expect(actual[0]).toHaveProperty('duration', 10.75);
       expect(actual[0]).toHaveProperty('content', 'foo bar bar baz');
 
       expect(actual[1]).toHaveProperty('start', 16.02);
