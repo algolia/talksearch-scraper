@@ -1,0 +1,40 @@
+#!/usr/bin/env sh
+# TODO:
+# Make this runnable through Docker, with the video id as input
+# Make it runnable on GCP/k8s with a temporary storage
+# Add checks to stop download if thumbnails already exist in S3
+#
+# Make another script to read the queue of message and run this one in sequence
+#
+# Push a message to the queue whenever we index a video
+
+
+video_id="$1"
+bucket_name="pixelastic-talksearch"
+path_tmp="/tmp/talksearch"
+path_destination="${path_tmp}/${video_id}"
+
+# Operate in tmp dir
+mkdir -p "$path_destination"
+cd "$path_destination"
+
+# Download mid-res video
+youtube-dl \
+  --output "video.mp4" \
+  --format 133 \
+  --continue \
+  "$video_id"
+
+# Extract one thumbnail for every minute of video
+ffmpeg \
+  -i "video.mp4" \
+  -vf fps=1/60 \
+  "%d.jpg"
+
+# Push all thumbnails to S3, under the videoId directory
+aws s3 \
+  cp . \
+  "s3://${bucket_name}/${video_id}/" \
+  --recursive \
+  --include "*.jpg"
+

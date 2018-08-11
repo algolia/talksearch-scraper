@@ -9,7 +9,7 @@ import yargs from 'yargs';
  * Parsing command line arguments
  **/
 const argv = yargs
-  .usage('Usage: yarn index [url]')
+  .usage('Usage: yarn index [config]')
   .command('$0 config', 'Index the videos of the specified config')
   .help(false)
   .version(false).argv;

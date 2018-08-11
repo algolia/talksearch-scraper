@@ -11,6 +11,7 @@
     "index:cache": "READ_FROM_CACHE=1 babel-node ./scripts/index.js",
     "index:logs": "WRITE_RESPONSE_LOGS=1 babel-node ./scripts/index.js",
     "new": "babel-node ./scripts/new-config.js",
+    "thumbnails": "./scripts/thumbnails i-p9lWIhcLQ",
     "precommit": "yarn lint",
     "prepush": "yarn test"
   },
