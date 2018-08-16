@@ -10,7 +10,7 @@
     "index": "babel-node ./scripts/index.js",
     "index:cache": "READ_FROM_CACHE=1 babel-node ./scripts/index.js",
     "index:logs": "WRITE_RESPONSE_LOGS=1 babel-node ./scripts/index.js",
-    "new": "babel-node ./scripts/new-config.js",
+    "new:config": "babel-node ./scripts/new-config.js",
     "thumbnails": "./scripts/thumbnails i-p9lWIhcLQ",
     "precommit": "yarn lint",
     "prepush": "yarn test"
@@ -55,7 +55,7 @@
     "@babel/plugin-proposal-object-rest-spread": "^7.0.0-beta.51",
     "@babel/preset-env": "^7.0.0-beta.51",
     "@google-cloud/language": "^1.2.0",
-    "algolia-indexing": "^0.0.5",
+    "algolia-indexing": "^0.0.6",
     "babel-core": "^7.0.0-bridge.0",
     "babel-eslint": "^8.2.3",
     "babel-jest": "^23.0.1",
