@@ -81,7 +81,8 @@ function enrich(record, path, pattern) {
     let newKey = key;
     let newValue = value;
     if (key === '_speaker_') {
-      newValue = [{ name: value }];
+      const allSpeakers = split(value, '&', ',');
+      newValue = _.map(allSpeakers, speakerName => ({ name: speakerName }));
       newKey = 'speakers';
     }
     _.set(newRecord, newKey, newValue);

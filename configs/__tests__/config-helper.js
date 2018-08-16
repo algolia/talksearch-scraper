@@ -134,7 +134,7 @@ describe('configHelper', () => {
       expect(actual).toEqual(record);
     });
 
-    it('it converts speakers to an array with names', () => {
+    it('it converts one speaker to an array with names', () => {
       const record = {
         video: {
           title: 'Tim Carry - bar',
@@ -147,6 +147,43 @@ describe('configHelper', () => {
 
       expect(actual).toHaveProperty('speakers', [{ name: 'Tim Carry' }]);
     });
+
+    describe('several speakers', () => {
+      it('seperated by &', () => {
+        const record = {
+          video: {
+            title: 'Tim Carry & Lucas Bonomi - bar',
+          },
+        };
+        const path = 'video.title';
+        const pattern = '{_speaker_} - {video.title}';
+
+        const actual = current(record, path, pattern);
+
+        expect(actual).toHaveProperty('speakers', [
+          { name: 'Tim Carry' },
+          { name: 'Lucas Bonomi' },
+        ]);
+      });
+
+      it('seperated by ,', () => {
+        const record = {
+          video: {
+            title: 'Tim Carry, Lucas Bonomi - bar',
+          },
+        };
+        const path = 'video.title';
+        const pattern = '{_speaker_} - {video.title}';
+
+        const actual = current(record, path, pattern);
+
+        expect(actual).toHaveProperty('speakers', [
+          { name: 'Tim Carry' },
+          { name: 'Lucas Bonomi' },
+        ]);
+      });
+    });
+
 
     it('replace the existing list of speakers', () => {
       const record = {
