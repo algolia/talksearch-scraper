@@ -50,14 +50,14 @@ function match(input, pattern) {
  * what is extracted.
  * Example:
  *     const input = { video: { title: 'John Doe - 2018' } }
- *     helper.enrich(input, 'video.title', '{speaker.name} - {conference.year}')
+ *     helper.enrich(input, 'video.title', '{_speakers_} - {conference.year}')
  *     => {
  *          video: {
  *            title: 'John Doe - 2018'
  *          },
- *          speaker: {
+ *          speakers: [{
  *            name: 'John Doe'
- *          },
+ *          }],
  *          conference: {
  *            year: '2018'
  *          }
@@ -80,7 +80,7 @@ function enrich(record, path, pattern) {
   _.each(matches, (value, key) => {
     let newKey = key;
     let newValue = value;
-    if (key === '_speaker_') {
+    if (key === '_speakers_') {
       const allSpeakers = split(value, '&', ',');
       newValue = _.map(allSpeakers, speakerName => ({ name: speakerName }));
       newKey = 'speakers';

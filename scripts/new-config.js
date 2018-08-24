@@ -20,7 +20,7 @@ const newConfig = {
   // Ask for the config name
   async getConfigName() {
     let configName = await this.prompt('What is the config name?');
-    configName = slugify(configName);
+    configName = _.lowerCase(slugify(configName, '_'));
     if (fs.existsSync(`./configs/${configName}.js`)) {
       console.info(
         chalk.red(`✘ There is already a config named ${configName}`)

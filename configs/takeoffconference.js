@@ -12,7 +12,7 @@ export default {
     record = helper.enrich(
       record,
       'video.title',
-      '{_} - {video.title} - {_speaker_}'
+      '{_} - {video.title} - {_speakers_}'
     );
 
     return record;

@@ -31,7 +31,7 @@ export default {
       record = helper.enrich(
         record,
         'video.title',
-        '{video.title} - {_speaker_} - Write the Docs Portland 2018'
+        '{video.title} - {_speakers_} - Write the Docs Portland 2018'
       );
       return record;
     }
@@ -41,7 +41,7 @@ export default {
       record = helper.enrich(
         record,
         'video.title',
-        'Write the Docs Prague 2017: {video.title} by {_speaker_}'
+        'Write the Docs Prague 2017: {video.title} by {_speakers_}'
       );
       return record;
     }
@@ -51,7 +51,7 @@ export default {
       record = helper.enrich(
         record,
         'video.title',
-        'Write the Docs Portland 2017: {video.title} by {_speaker_}'
+        'Write the Docs Portland 2017: {video.title} by {_speakers_}'
       );
       return record;
     }
@@ -60,7 +60,7 @@ export default {
     record = helper.enrich(
       record,
       'video.title',
-      '{_speaker_} - {video.title}'
+      '{_speakers_} - {video.title}'
     );
     return record;
   },

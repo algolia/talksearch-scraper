@@ -141,7 +141,7 @@ describe('configHelper', () => {
         },
       };
       const path = 'video.title';
-      const pattern = '{_speaker_} - {video.title}';
+      const pattern = '{_speakers_} - {video.title}';
 
       const actual = current(record, path, pattern);
 
@@ -156,7 +156,7 @@ describe('configHelper', () => {
           },
         };
         const path = 'video.title';
-        const pattern = '{_speaker_} - {video.title}';
+        const pattern = '{_speakers_} - {video.title}';
 
         const actual = current(record, path, pattern);
 
@@ -173,7 +173,7 @@ describe('configHelper', () => {
           },
         };
         const path = 'video.title';
-        const pattern = '{_speaker_} - {video.title}';
+        const pattern = '{_speakers_} - {video.title}';
 
         const actual = current(record, path, pattern);
 
@@ -184,7 +184,6 @@ describe('configHelper', () => {
       });
     });
 
-
     it('replace the existing list of speakers', () => {
       const record = {
         speakers: [{ name: 'foo' }, { name: 'bar' }],
@@ -193,7 +192,7 @@ describe('configHelper', () => {
         },
       };
       const path = 'video.title';
-      const pattern = '{_speaker_} - {video.title}';
+      const pattern = '{_speakers_} - {video.title}';
 
       const actual = current(record, path, pattern);
 
