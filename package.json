@@ -36,7 +36,7 @@
     "dotenv": "4.0.0",
     "glob": "7.1.2",
     "json-stable-stringify": "1.0.1",
-    "lodash": "4.17.5",
+    "lodash": "4.17.11",
     "mkdirp": "0.5.1",
     "multi-progress": "2.0.0",
     "p-all": "1.0.0",
