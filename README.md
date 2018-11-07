@@ -39,7 +39,7 @@ We suggest using a tool like [direnv][1] to load those
 variables through the use of a `.envrc` file.
 
 Once everything is installed, you should be able to run `yarn index
-{youtube_url}`
+{config_name}`
 
 ## Options
 
