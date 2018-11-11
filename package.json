@@ -46,7 +46,7 @@
     "parse-iso-duration": "1.0.0",
     "pify": "3.0.0",
     "query-string": "6.2.0",
-    "yargs": "11.0.0"
+    "yargs": "11.1.0"
   },
   "devDependencies": {
     "@babel/cli": "7.1.2",
