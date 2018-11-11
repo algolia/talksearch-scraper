@@ -1833,10 +1833,10 @@ data-urls@^1.0.0:
     whatwg-mimetype "^2.0.0"
     whatwg-url "^6.4.0"
 
-dayjs@1.6.9:
-  version "1.6.9"
-  resolved "https://registry.yarnpkg.com/dayjs/-/dayjs-1.6.9.tgz#b3568220ac9d71fc295392aaaa5cf9e0e00232f2"
-  integrity sha512-6e9R/dKeERbUuiRoEIcEBTFSnCDHAq7Hzw99fPZMJbee2ZlqDCpvrE9MWWW6QN6nZ2W+Dfa7el9HkeJk7ui9TQ==
+dayjs@1.7.7:
+  version "1.7.7"
+  resolved "https://registry.yarnpkg.com/dayjs/-/dayjs-1.7.7.tgz#8df20f78ac2476e3f5348ef49f8f22ebc3016370"
+  integrity sha512-Qlkiu0NNDpYwhk0syK4ImvAl/5YnsEMkvC2O123INviGeOA3Q8s5VyVkZzmN5SC7Wv9bb1+rfwO+uSqtHB4UWw==
 
 debug@^2.1.2, debug@^2.2.0, debug@^2.3.3, debug@^2.6.8, debug@^2.6.9:
   version "2.6.9"
