@@ -29,7 +29,7 @@
   "dependencies": {
     "algoliasearch": "3.30.0",
     "axios": "0.17.1",
-    "bluebird": "3.5.1",
+    "bluebird": "3.5.3",
     "chalk": "2.4.1",
     "cheerio": "1.0.0-rc.2",
     "dayjs": "1.6.9",
