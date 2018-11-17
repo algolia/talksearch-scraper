@@ -1,4 +1,4 @@
-from ubuntu:18.04
+from ubuntu:18.10
 
 # Install Python
 RUN apt-get update -y && \
