@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+# Needed environment variables:
+# VIDEO_ID: The YouTube video id to target
+# AWS_ACCESS_KEY_ID: AWS Access Key
+# AWS_SECRET_ACCESS_KEY: AWS Secret Access Key
+# TALKSEARCH_MODE: If set to 'dev', created files will be chown to 1000
+
+# TODO:
+#   Stop if thumbnails already in S3
+
+# Work in /tmp/{VIDEO_ID}
+base_dir="/tmp/talksearch/$VIDEO_ID"
+mkdir -p "$base_dir"
+cd "$base_dir"
+
+# Download the video
+youtube-dl \
+  --restrict-filenames \
+  --output "video.mp4" \
+  --format 133 \
+  --continue \
+  "$VIDEO_ID"
+
+# Extract one thumbnail for every minute of video
+ffmpeg \
+  -i "video.mp4" \
+  -vf fps=1/60 \
+  "%d.jpg"
+
+# When in dev, we change the owner of the files mounted on the host so it's
+# easier to delete them
+if [[ $TALKSEARCH_MODE == 'dev' ]]; then
+  chown 1000:1000 -R /tmp/talksearch/
+fi
+
+# Push thumbnails to S3
+aws s3 \
+  cp . \
+  "s3://alg-talksearch/thumbnails/${VIDEO_ID}/" \
+  --recursive \
+  --exclude "*" --include "*.jpg"
