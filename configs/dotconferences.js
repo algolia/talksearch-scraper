@@ -1,6 +1,8 @@
 export default {
   indexName: 'dotconferences',
   playlists: [
+    'PLMW8Xq7bXrG7LL-bLSweRFmFw7y2HhypC', // dotJS 2018
+    'PLMW8Xq7bXrG702XVNfv_zqfFdt-498iV_', // dotCSS 2018
     'PLMW8Xq7bXrG4zEMLdfZTpS9VCKjXeD--h', // dotScale 2018
     'PLMW8Xq7bXrG6M2Nabwt3LuBxZyHVHRZhf', // dotAI 2018
     'PLMW8Xq7bXrG4OC1CZW7m-davg4p4ZCBmZ', // dotSwift 2018
