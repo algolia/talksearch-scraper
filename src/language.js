@@ -134,6 +134,32 @@ const module = {
   },
 
   /**
+   * React to errors returned by the Google API
+   * @param {Object} err Error thrown
+   * @param {String} videoId Id of the video
+   * @returns {Void}
+   **/
+  handleGoogleApiErrors(err, videoId) {
+    const message = err.message;
+    // We catch "missing credentials" error. This is a hard error, the whole
+    // process needs to stop
+    if (_.includes(message, 'Could not load the default credentials')) {
+      console.info('Unable to load Google Natural Language API credentials');
+      console.info(
+        'Make sure you have GOOGLE_APPLICATION_CREDENTIALS set to the path to your google.service-account-file.json file'
+      );
+      console.info(
+        "If you don't have a service-account.json file, create one on https://console.cloud.google.com/apis/credentials/serviceaccountkey"
+      );
+      // eslint-disable-next-line no-process-exit
+      process.exit(1);
+    }
+
+    // Other errors will just warn
+    pulse.emit('warning', message, `https://youtu.be/${videoId}`);
+  },
+
+  /**
    * Return the list of entities as found by the Google Language API for the given
    * input. Results will be read from cache if cache is enabled
    * @param {String} videoId The videoId (used as a cache key)
@@ -155,7 +181,7 @@ const module = {
     try {
       results = await this.client().analyzeEntities({ document: options });
     } catch (err) {
-      pulse.emit('warning', err.details, `https://youtu.be/${videoId}`);
+      this.handleGoogleApiErrors(err, videoId);
       return [];
     }
 
@@ -205,6 +231,7 @@ const module = {
     if (shouldUseCache) {
       await grabCache();
     }
+
     const newVideos = await pMap(videos, async video => {
       const newVideo = await enrichVideo(video);
       pulse.emit('enrich:chunk');

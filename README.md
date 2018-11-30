@@ -32,8 +32,10 @@ Start with `yarn install` to load all the dependencies.
 
 The project will need `ENV` variables to connect to the services.
 
-- `ALGOLIA_APP_ID` and `ALGOLIA_API_KEY` for pushing records to Algolia
-- `YOUTUBE_API_KEY` to connect to the YouTube API
+* `ALGOLIA_APP_ID` and `ALGOLIA_API_KEY` for pushing records to Algolia
+* `YOUTUBE_API_KEY` to connect to the YouTube API
+* `GOOGLE_APPLICATION_CREDENTIALS` that point to the path to your
+  `google.service-account-file.json` ([create one here][2])
 
 We suggest using a tool like [direnv][1] to load those variables through the use
 of a `.envrc` file.
@@ -56,3 +58,4 @@ This will log all HTTP calls raw responses to disk. This is useful when
 debugging, as it allow to dig into the responses of the APIs called.
 
 [1]: https://direnv.net/
+[2]: https://console.cloud.google.com/apis/credentials/serviceaccountkey
