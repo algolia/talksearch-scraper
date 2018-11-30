@@ -1,11 +1,11 @@
 # TalkSearch scraper
 
-This scraper is a command line tool that extract information from YouTube
+This scraper is a command-line tool that extract information from YouTube
 playlists and push them to Algolia.
 
 ## Usage
 
-```
+```shell
 yarn index {config_name}
 ```
 
@@ -35,31 +35,24 @@ The project will need `ENV` variables to connect to the services.
 - `ALGOLIA_APP_ID` and `ALGOLIA_API_KEY` for pushing records to Algolia
 - `YOUTUBE_API_KEY` to connect to the YouTube API
 
-We suggest using a tool like [direnv][1] to load those
-variables through the use of a `.envrc` file.
+We suggest using a tool like [direnv][1] to load those variables through the use
+of a `.envrc` file.
 
-Once everything is installed, you should be able to run `yarn index
-{config_name}`
+Once everything is installed, you can run `yarn index {config_name}`
 
-## Options
+## Debug calls
 
-### `--log`
+### `yarn run index:cache`
 
-This flag should be used when debugging an indexing. It will write to disk all
-HTTP call responses made (in the `./logs` directory). This is useful for
-analysing calls.
+This will read data from a disk cache of previous requests instead of making
+actual HTTP calls. If there is no cache hit for the request, it will do it for
+real.
 
-### `--to-cache` and `--from-cache`
+This should be the preferred way of running the command for debugging purposes.
 
-When `--to-cache` is present, the data obtained from the YouTube API will be
-saved on disk instead of being transformed into records and pushed to Algolia.
+### `yarn run index:logs`
 
-When `--from-cache` is present, data will be read directly from disk (as saved
-with `--to-cache`) instead of obtained through the API before being send to
-Algolia.
-
-The combination of those two options will allow you to independently debug the
-crawling of data and the transformation of data to records.
-
+This will log all HTTP calls raw responses to disk. This is useful when
+debugging, as it allow to dig into the responses of the APIs called.
 
 [1]: https://direnv.net/
