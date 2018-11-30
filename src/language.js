@@ -151,12 +151,20 @@ const module = {
       console.info(
         "If you don't have a service-account.json file, create one on https://console.cloud.google.com/apis/credentials/serviceaccountkey"
       );
-      // eslint-disable-next-line no-process-exit
-      process.exit(1);
+      this.stopProcess();
     }
 
     // Other errors will just warn
     pulse.emit('warning', message, `https://youtu.be/${videoId}`);
+  },
+
+  /**
+   * Stop the current node process
+   * @returns {Void}
+   **/
+  stopProcess() {
+    // eslint-disable-next-line no-process-exit
+    process.exit(1);
   },
 
   /**

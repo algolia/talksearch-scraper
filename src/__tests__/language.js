@@ -15,8 +15,6 @@ jest.mock('../pulse');
 import pulse from '../pulse';
 pulse.emit = jest.fn();
 
-const anyString = expect.any(String);
-
 describe('language', () => {
   describe('cache', () => {
     beforeEach(() => {
@@ -220,15 +218,12 @@ describe('language', () => {
           throw err;
         },
       });
+      const mockHandleErrors = mock('handleGoogleApiErrors');
 
       const actual = await module.getEntities('my_video', 'anything');
 
       expect(actual).toEqual([]);
-      expect(pulse.emit).toHaveBeenCalledWith(
-        'warning',
-        'details',
-        'https://youtu.be/my_video'
-      );
+      expect(mockHandleErrors).toHaveBeenCalled();
     });
 
     describe('getSpeakers', () => {
@@ -274,6 +269,36 @@ describe('language', () => {
         expect(actual[0]).toHaveProperty('name', 'Tim Carry');
         expect(actual[1]).toHaveProperty('name', 'John Doe');
       });
+    });
+  });
+
+  describe('handleGoogleApiErrors', () => {
+    it('should emit a warning for regular errors', () => {
+      const error = { message: 'Foo bar' };
+      const videoId = 'foo';
+
+      module.handleGoogleApiErrors(error, videoId);
+
+      expect(pulse.emit).toHaveBeenCalledWith(
+        'warning',
+        'Foo bar',
+        'https://youtu.be/foo'
+      );
+    });
+    it('should stop the process if missing credentials', () => {
+      const error = {
+        message: 'blablah Could not load the default credentials blablah',
+      };
+      const videoId = 'foo';
+      const mockStopProcess = mock('stopProcess');
+      const mockConsole = jest
+        .spyOn(global.console, 'info')
+        .mockImplementation();
+
+      module.handleGoogleApiErrors(error, videoId);
+
+      expect(mockStopProcess).toHaveBeenCalled();
+      expect(mockConsole).toHaveBeenCalled();
     });
   });
 
