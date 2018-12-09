@@ -27,7 +27,7 @@
   },
   "homepage": "https://github.com/algolia/talksearch-scraper#readme",
   "dependencies": {
-    "algoliasearch": "3.30.0",
+    "algoliasearch": "3.31.0",
     "axios": "0.17.1",
     "bluebird": "3.5.3",
     "chalk": "2.4.1",
