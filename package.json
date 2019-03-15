@@ -41,7 +41,7 @@
     "multi-progress": "2.0.0",
     "p-all": "1.0.0",
     "p-each-series": "1.0.0",
-    "p-iteration": "1.1.7",
+    "p-iteration": "1.1.8",
     "p-map": "1.2.0",
     "parse-iso-duration": "1.0.0",
     "pify": "3.0.0",
