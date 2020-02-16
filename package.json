@@ -45,7 +45,7 @@
     "p-map": "1.2.0",
     "parse-iso-duration": "1.0.0",
     "pify": "3.0.0",
-    "query-string": "6.2.0",
+    "query-string": "6.11.0",
     "yargs": "11.1.0"
   },
   "devDependencies": {
