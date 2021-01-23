@@ -4887,10 +4887,10 @@ parse-glob@^3.0.4:
     is-extglob "^1.0.0"
     is-glob "^2.0.0"
 
-parse-iso-duration@1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/parse-iso-duration/-/parse-iso-duration-1.0.0.tgz#b923ab898a8ff8f42bdc9ee5db6e22808c48a864"
-  integrity sha1-uSOriYqP+PQr3J7l224igIxIqGQ=
+parse-iso-duration@1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/parse-iso-duration/-/parse-iso-duration-1.1.0.tgz#92a1ab0f564d9a1cf2e0249796fceea6270dfa63"
+  integrity sha512-gZ4xqt/7/pWg9Z7mhwQdsqZAVMKMVbBH7C4rQBtXpVjphPVjEow2ASxukh/m32QoSVn11OO7T1XAC2KN+No5EQ==
 
 parse-json@^2.2.0:
   version "2.2.0"

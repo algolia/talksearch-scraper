@@ -43,7 +43,7 @@
     "p-each-series": "1.0.0",
     "p-iteration": "1.1.7",
     "p-map": "1.2.0",
-    "parse-iso-duration": "1.0.0",
+    "parse-iso-duration": "1.1.0",
     "pify": "3.0.0",
     "query-string": "6.2.0",
     "yargs": "11.1.0"
