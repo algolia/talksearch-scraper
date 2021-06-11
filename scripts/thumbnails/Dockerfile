@@ -16,7 +16,9 @@ RUN apt-get install -y ffmpeg
 # Install AWS cli
 RUN pip install awscli
 
+ENV LC_ALL C.UTF-8
+
 # Put executable script at root
-COPY run /root/
-RUN chmod +x /root/run
-ENTRYPOINT ["/root/run"]
+COPY extract-thumbnails /root/
+RUN chmod +x /root/extract-thumbnails
+ENTRYPOINT ["/root/extract-thumbnails"]

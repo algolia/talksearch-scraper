@@ -1,43 +1,25 @@
 #!/usr/bin/env sh
+set -e
 
-# Needed environment variables:
-# VIDEO_ID: The YouTube video id to target
-# AWS_ACCESS_KEY_ID: AWS Access Key
-# AWS_SECRET_ACCESS_KEY: AWS Secret Access Key
+IMAGE_NAME="talksearch"
+CONTAINER_NAME="talksearch"
+VIDEO_ID=$1
 
-# TODO:
-#   Stop if thumbnails already in S3
+mkdir -p /tmp/docker
 
-# Work in /tmp/{VIDEO_ID}
-cd /tmp
-mkdir -p "talksearch/$VIDEO_ID"
-cd "./talksearch/$VIDEO_ID"
+# Create image
+echo "CREATE IMAGE"
+docker build -t $IMAGE_NAME .
 
-# Download the video
-youtube-dl \
-  --output "video.mp4" \
-  --format 133 \
-  --continue \
-  "$VIDEO_ID"
+# Delete previous container
+echo "DELETE CONTAINER"
+docker rm --force $CONTAINER_NAME
 
-# Extract one thumbnail for every minute of video
-ffmpeg \
-  -i "video.mp4" \
-  -vf fps=1/60 \
-  "%d.jpg"
-
-# Push thumbnails to S3
-aws s3 \
-  cp . \
-  "s3://talksearch/thumbnails/${VIDEO_ID}/" \
-  --recursive \
-  --include "*.jpg"
-# video_id="$1"
-# bucket_name="pixelastic-talksearch"
-# path_tmp="/tmp/talksearch"
-# path_destination="${path_tmp}/${video_id}"
-
-
-
-## Push all thumbnails to S3, under the videoId directory
-
+# Run container
+echo "RUN CONTAINER"
+docker run \
+  --name $CONTAINER_NAME \
+  -v /tmp/docker:/tmp \
+  -e TALKSEARCH_MODE='dev' \
+  -e VIDEO_ID="$VIDEO_ID" \
+  $IMAGE_NAME
